@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Game Management</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body class="game-page">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
+    <a href="admingame.html" class="active"><i class='bx bxs-game'></i> Game Management</a>
+    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
+    <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
+
+    <!-- Logout Button -->
+    <div class="logout-section">
+      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Game Management</h1>
+
+    <section class="game-form-section">
+      <h2>Add / Edit Game</h2>
+      <form id="gameForm">
+        <input type="hidden" id="gameId" value="">
+        <input type="text" id="gameName" placeholder="Game Name" required>
+        <textarea id="gameDesc" placeholder="Description" required></textarea>
+
+        <label for="gamePlatform">Platform:</label>
+        <select id="gamePlatform" required>
+          <option value="" disabled selected>Select Platform</option>
+          <option value="PS">PS</option>
+          <option value="Xbox">Xbox</option>
+          <option value="Nintendo">Nintendo</option>
+        </select>
+
+        <input type="number" id="gamePrice" placeholder="Price" min="0" step="0.01" required>
+        <input type="number" id="gameStock" placeholder="Stock Quantity" min="0" required>
+
+        <!-- NEW: Image Upload -->
+        <label for="gameImage">Upload Game Image:</label>
+        <input type="file" id="gameImage" accept="image/*">
+        <p id="uploadStatus" style="font-size: 0.9em; color: gray;"></p>
+
+        <button type="submit" class="btn">Save Game</button>
+        <button type="button" id="clearForm" class="btn secondary">Clear</button>
+      </form>
+    </section>
+
+    <section class="game-list-section">
+      <h2>Existing Games</h2>
+      <table id="gamesTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Platform</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Image</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Games will be listed here -->
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+      measurementId: "G-V6SWSF6F2D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const gamesRef = collection(db, "games");
+
+    const gameForm = document.getElementById("gameForm");
+    const gameIdInput = document.getElementById("gameId");
+    const nameInput = document.getElementById("gameName");
+    const descInput = document.getElementById("gameDesc");
+    const platformInput = document.getElementById("gamePlatform");
+    const priceInput = document.getElementById("gamePrice");
+    const stockInput = document.getElementById("gameStock");
+    const imageInput = document.getElementById("gameImage");
+    const uploadStatus = document.getElementById("uploadStatus");
+    const gamesTableBody = document.querySelector("#gamesTable tbody");
+    const clearBtn = document.getElementById("clearForm");
+
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dqgvby5lb/image/upload";
+    const CLOUDINARY_PRESET = "game_images"; // ⚠️ Replace this with your preset name
+
+    // Load games
+    async function loadGames() {
+      gamesTableBody.innerHTML = "";
+      const snapshot = await getDocs(gamesRef);
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.description}</td>
+          <td>${data.platform || ''}</td>
+          <td>$${data.price.toFixed(2)}</td>
+          <td>${data.stock}</td>
+          <td>${data.image ? `<img src="${data.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">` : 'No Image'}</td>
+          <td>
+            <button class="edit-btn" data-id="${docSnap.id}">Edit</button>
+            <button class="delete-btn" data-id="${docSnap.id}">Delete</button>
+          </td>
+        `;
+        gamesTableBody.appendChild(tr);
+      });
+    }
+    loadGames();
+
+    // Add or update game
+    gameForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const gameId = gameIdInput.value;
+      const gameData = {
+        name: nameInput.value,
+        description: descInput.value,
+        platform: platformInput.value,
+        price: parseFloat(priceInput.value),
+        stock: parseInt(stockInput.value),
+      };
+
+      // Handle image upload
+      if (imageInput.files.length > 0) {
+        const file = imageInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_PRESET);
+        uploadStatus.textContent = "Uploading image...";
+
+        try {
+          const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+          const data = await res.json();
+          gameData.image = data.secure_url;
+          uploadStatus.textContent = "✅ Image uploaded successfully!";
+        } catch (err) {
+          console.error(err);
+          uploadStatus.textContent = "❌ Image upload failed.";
+        }
+      }
+
+      try {
+        if (gameId) {
+          await updateDoc(doc(db, "games", gameId), gameData);
+          alert("✅ Game updated!");
+        } else {
+          await addDoc(gamesRef, gameData);
+          alert("✅ Game added!");
+        }
+        gameForm.reset();
+        uploadStatus.textContent = "";
+        gameIdInput.value = "";
+        loadGames();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error saving game!");
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      gameForm.reset();
+      uploadStatus.textContent = "";
+      gameIdInput.value = "";
+    });
+
+    // Edit/Delete
+    gamesTableBody.addEventListener("click", async (e) => {
+      const docId = e.target.dataset.id;
+      if (!docId) return;
+
+      if (e.target.classList.contains("edit-btn")) {
+        const docSnap = await getDoc(doc(db, "games", docId));
+        if (docSnap.exists()) {
+          const gameData = docSnap.data();
+          gameIdInput.value = docId;
+          nameInput.value = gameData.name;
+          descInput.value = gameData.description;
+          platformInput.value = gameData.platform || "";
+          priceInput.value = gameData.price;
+          stockInput.value = gameData.stock;
+          uploadStatus.textContent = "";
+        }
+      } else if (e.target.classList.contains("delete-btn")) {
+        if (confirm("Are you sure you want to delete this game?")) {
+          await deleteDoc(doc(db, "games", docId));
+          loadGames();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

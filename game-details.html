@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Store - Xbox</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="landing.css" />
+
+  <style>
+    /* === User menu === */
+    .user-menu{ position:relative; display:none; }
+    .user-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:999px;
+      background:#1a1a1a; border:1px solid #262626; color:#00ff00;
+      font-size:1.4rem; cursor:pointer; transition:background .15s ease;
+    }
+    .user-btn:hover{ background:#222; }
+    .user-card{
+      position:absolute; top:calc(100% + 10px); right:0; min-width:280px;
+      background:#111; border:1px solid #222; border-radius:16px;
+      box-shadow:0 18px 40px rgba(0,0,0,.5); padding:12px; display:none; z-index:4000;
+    }
+    .user-menu.open .user-card{ display:block; }
+    .uc-header{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#151515; border:1px solid #222; margin-bottom:10px;}
+    .uc-avatar{ width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#00ff00; color:#111; font-weight:800;}
+    .uc-ident{ line-height:1.2; }
+    .uc-name{ font-weight:800; color:#fff; }
+    .uc-points{ font-size:.85rem; color:#bdbdbd; }
+    .uc-items{ padding:6px 0; }
+    .uc-item{ width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; color:#eaeaea; background:transparent; border:none; text-decoration:none; border-radius:10px; cursor:pointer; font-weight:700; transition:background .15s ease, color .15s ease, transform .05s ease; }
+    .uc-item i{ font-size:1.1rem; }
+    .uc-item:hover{ background:#1b1b1d; color:#fff; }
+    .uc-logout{ width:100%; text-align:left; margin-top:6px; color:#ff8080; }
+    .uc-logout:hover{ background:#1b1b1d; color:#ffb3b3; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Top Header / Nav ===== -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <a href="landing.html" class="brand">
+        <img src="Images/logo.png" alt="Brand Logo">
+      </a>
+
+      <form class="search" action="#" method="get">
+        <input type="text" name="q" placeholder="Search" aria-label="Search" />
+        <button type="submit" aria-label="Search"><i class='bx bx-search'></i></button>
+      </form>
+
+      <div class="actions">
+        <a href="#" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
+
+        <!-- Login button -->
+        <a href="login.html" id="loginBtn" class="icon-btn" aria-label="Login">
+          <i class='bx bx-user'></i><span class="label">Login</span>
+        </a>
+
+        <!-- User menu -->
+        <div class="user-menu" id="userMenu">
+          <button class="user-btn" id="userBtn" aria-expanded="false" aria-haspopup="true">
+            <i class='bx bx-user-circle'></i>
+          </button>
+          <div class="user-card" id="userDropdown" role="menu">
+            <div class="uc-header">
+              <div class="uc-avatar" id="userAvatar">U</div>
+              <div class="uc-ident">
+                <div class="uc-name" id="userNameLarge">User</div>
+                <div class="uc-points" id="userPoints">0 Points</div>
+              </div>
+            </div>
+            <div class="uc-items">
+              <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
+              <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+              <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
+            </div>
+            <button class="uc-item uc-logout" id="logoutBtn"><i class='bx bx-log-out'></i> Logout</button>
+          </div>
+        </div>
+
+        <a href="cart.html" class="icon-btn cart" aria-label="Cart">
+          <i class='bx bx-cart'></i><span class="count" id="cartCount">0</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== Navigation ===== -->
+    <nav class="mainnav" aria-label="Main navigation">
+      <ul>
+        <li><a href="landing.html">HOME</a></li>
+        <li class="has-sub">
+          <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="#">PS</a></li>
+            <li><a href="#">Xbox</a></li>
+            <li><a href="#">Nintendo</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">GAMES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="#">PS5</a></li>
+            <li><a href="#">PS4</a></li>
+            <li><a href="games.html">Xbox</a></li>
+            <li><a href="#">Nintendo</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="#">Keyboards</a></li>
+            <li><a href="#">Mice</a></li>
+            <li><a href="#">Monitors</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="#">Figures</a></li>
+            <li><a href="#">Limited Editions</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="#">Apparel</a></li>
+            <li><a href="#">Bags</a></li>
+            <li><a href="#">Posters</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ===== Game Details Content ===== -->
+  <main class="wrapper">
+    <section class="game-details">
+      <div class="details-layout">
+        <div class="game-cover">
+          <img src="Images/vert.jpg" alt="Halo Infinite Cover">
+        </div>
+        <div class="game-info">
+          <h2>Halo Infinite</h2>
+          <p class="price">$59.99</p>
+          <p class="desc">
+            Experience the most expansive Master Chief campaign yet and a groundbreaking free-to-play multiplayer experience.
+          </p>
+
+          <div class="purchase-row">
+            <div class="quantity">
+              <label for="qty">Quantity:</label>
+              <div class="qty-control">
+                <button type="button" class="qty-btn minus">−</button>
+                <input type="number" id="qty" name="qty" min="1" value="1">
+                <button type="button" class="qty-btn plus">+</button>
+              </div>
+            </div>
+            <button class="add-to-cart"><i class='bx bx-cart'></i> Add to Cart</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase + user menu + points -->
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+  authDomain: "final-year-b1cc2.firebaseapp.com",
+  projectId: "final-year-b1cc2",
+  storageBucket: "final-year-b1cc2.firebasestorage.app",
+  messagingSenderId: "537245015385",
+  appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+  measurementId: "G-V6SWSF6F2D"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Elements
+const loginBtn   = document.getElementById("loginBtn");
+const userMenu   = document.getElementById("userMenu");
+const userBtn    = document.getElementById("userBtn");
+const logoutBtn  = document.getElementById("logoutBtn");
+const userNameLg = document.getElementById("userNameLarge");
+const userPoints = document.getElementById("userPoints"); // Add <div id="userPoints"></div> in your user card if needed
+const userAvatar = document.getElementById("userAvatar");
+
+// Helper: initials
+function initialsFrom(nameOrEmail){
+  const base = (nameOrEmail || "User").trim();
+  const parts = base.includes("@") ? [base.split("@")[0]] : base.split(" ");
+  const letters = parts.filter(Boolean).slice(0,2).map(s => s[0].toUpperCase());
+  return letters.join('') || 'U';
+}
+
+// Fetch or initialize user data
+async function fetchUserData(uid, email){
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+  if(snap.exists()){
+    const data = snap.data();
+    return { name: data.username || email.split("@")[0], points: data.points || 0 };
+  } else {
+    await setDoc(userRef, { username: email.split("@")[0], points: 0, email: email });
+    return { name: email.split("@")[0], points: 0 };
+  }
+}
+
+// Show UI for logged in/out
+function showLoggedInDisplay(name, points, email){
+  if(loginBtn) loginBtn.style.display = "none";
+  if(userMenu) userMenu.style.display = "inline-flex";
+  if(userNameLg) userNameLg.textContent = name;
+  if(userPoints) userPoints.textContent = `${points} Points`;
+  if(userAvatar) userAvatar.textContent = initialsFrom(email || name);
+}
+
+function showLoggedOutDisplay(){
+  if(loginBtn) loginBtn.style.display = "inline-flex";
+  if(userMenu) userMenu.style.display = "none";
+}
+
+// Instant display using localStorage to prevent flicker
+let storedName = localStorage.getItem("username");
+let storedPoints = localStorage.getItem("points");
+if(storedName){
+  showLoggedInDisplay(storedName, storedPoints || 0);
+}
+
+// Firebase auth listener
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    const uid = user.uid;
+    const email = user.email;
+    const data = await fetchUserData(uid, email);
+    localStorage.setItem("username", data.name);
+    localStorage.setItem("points", data.points);
+    showLoggedInDisplay(data.name, data.points, email);
+  } else {
+    localStorage.removeItem("username");
+    localStorage.removeItem("points");
+    showLoggedOutDisplay();
+  }
+});
+
+// Dropdown toggle
+if(userBtn && userMenu){
+  userBtn.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    const isOpen = userMenu.classList.toggle("open");
+    userBtn.setAttribute("aria-expanded", String(isOpen));
+  });
+  document.addEventListener("click",(e)=>{
+    if(!userMenu.contains(e.target)){
+      userMenu.classList.remove("open");
+      userBtn.setAttribute("aria-expanded","false");
+    }
+  });
+  document.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape"){
+      userMenu.classList.remove("open");
+      userBtn.setAttribute("aria-expanded","false");
+    }
+  });
+}
+
+// Logout
+if(logoutBtn){
+  logoutBtn.addEventListener("click", async ()=>{
+    try{ await signOut(auth); } catch{}
+    localStorage.removeItem("username");
+    localStorage.removeItem("points");
+    showLoggedOutDisplay();
+    window.location.href = "landing.html";
+  });
+}
+</script>
+
+
+  <script src="landing.js"></script>
+</body>
+</html>

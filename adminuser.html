@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
+    <a href="admingame.html"><i class='bx bxs-game'></i> Game Management</a>
+    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
+    <a href="adminuser.html" class="active"><i class='bx bxs-user-account'></i> User Management</a>
+
+     <!-- Logout Button -->
+    <div class="logout-section">
+      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="card">
+      <h3>User Management</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Points</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>testuser</td>
+            <td>test@gmail.com</td>
+            <td>5</td>
+            <td>user</td>
+            <td>
+              <button class="btn" onclick="openModal('userModal')">Edit</button>
+              <button class="btn">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('userModal')">&times;</span>
+      <h3>Edit User</h3>
+      <input type="text" placeholder="Username">
+      <input type="email" placeholder="Email">
+      <input type="number" placeholder="Points">
+      <select>
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button class="btn">Save</button>
+    </div>
+  </div>
+
+  <script>
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    window.onclick = function(event) {
+      document.querySelectorAll('.modal').forEach(modal => {
+        if (event.target === modal) modal.style.display = 'none';
+      });
+    }
+  </script>
+
+</body>
+</html>

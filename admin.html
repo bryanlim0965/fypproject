@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body class="dashboard-page">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin.html" class="active"><i class='bx bxs-dashboard'></i> Dashboard</a>
+    <a href="admingame.html"><i class='bx bxs-game'></i> Game Management</a>
+    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
+    <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
+
+    <!-- Logout Button -->
+    <div class="logout-section">
+      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="card">
+      <h3>Analytics / Dashboard</h3>
+      <p>Popular Games: <span id="popular-games">Placeholder</span></p>
+      <p>Sales Statistics: <span id="sales-stats">Placeholder</span></p>
+    </div>
+
+    <div class="card">
+      <h3>Recent Orders</h3>
+      <p>Order #1023 - Pending</p>
+      <p>Order #1022 - Completed</p>
+      <p>Order #1021 - Cancelled</p>
+    </div>
+  </div>
+
+</body>
+</html>

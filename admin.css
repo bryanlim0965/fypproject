@@ -1,0 +1,272 @@
+/* ==============================
+   Global / Sidebar Styles
+============================== */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f0f2f5; /* light gray background */
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 220px;
+  height: 100%;
+  background-color: #1e1f29; /* dark sidebar */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.sidebar h2 {
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 20px;
+}
+
+.sidebar a {
+  display: flex;
+  align-items: center;
+  color: #c7c7c7; /* sidebar link color */
+  padding: 12px;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+
+.sidebar a.active,
+.sidebar a:hover {
+  background-color: #2c2e3e; /* hover highlight */
+  color: #ffffff;
+}
+
+.sidebar i {
+  margin-right: 10px;
+}
+
+.main-content {
+  margin-left: 240px; /* space for sidebar */
+  padding: 20px;
+}
+
+/* ==============================
+   Dashboard Page Styles
+============================== */
+.dashboard-page .card {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+/* ==============================
+   Game Management Page Styles
+============================== */
+.game-page .game-form-section,
+.game-page .game-list-section {
+  background-color: #fff;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.game-page .game-form-section h2,
+.game-page .game-list-section h2 {
+  margin-top: 0;
+}
+
+.game-page .game-form-section input,
+.game-page .game-form-section textarea,
+.game-page .game-form-section select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.game-page .game-form-section select {
+  margin-bottom: 15px; /* space below dropdown */
+}
+
+.game-page .game-form-section button {
+  padding: 10px 15px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.game-page .btn {
+  background-color: #2980b9;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+}
+
+.game-page .btn.secondary {
+  background-color: #95a5a6;
+}
+
+.game-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.game-page table th,
+.game-page table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.game-page .edit-btn,
+.game-page .delete-btn {
+  padding: 5px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.game-page .edit-btn {
+  background-color: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+.game-page .delete-btn {
+  background-color: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+/* ==============================
+   Order Management Page Styles
+============================== */
+.order-page .order-form-section,
+.order-page .order-list-section {
+  background-color: #fff;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.order-page .order-form-section h2,
+.order-page .order-list-section h2 {
+  margin-top: 0;
+}
+
+.order-page .order-form-section input,
+.order-page .order-form-section textarea,
+.order-page .order-form-section select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.order-page .order-form-section button {
+  padding: 10px 15px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.order-page .btn {
+  background-color: #8e44ad; /* example color for orders */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+}
+
+.order-page .btn.secondary {
+  background-color: #95a5a6;
+}
+
+.order-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-page table th,
+.order-page table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.order-page .edit-btn,
+.order-page .delete-btn {
+  padding: 5px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.order-page .edit-btn {
+  background-color: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+.order-page .delete-btn {
+  background-color: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+/* ==============================
+   User Management Page Styles
+============================== */
+.user-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-page table th,
+.user-page table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Logout Section (Bottom of Sidebar) */
+.logout-section {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #c0392b;
+  color: #fff;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #e74c3c;
+}
+
+.logout-btn i {
+  margin-right: 8px;
+}
+
+/* Limit description width & show ellipsis (...) for long text */
+#gamesTable td:nth-child(2) {
+  max-width: 200px;         /* limit description cell width */
+  white-space: nowrap;      /* prevent wrapping */
+  overflow: hidden;         /* hide overflow text */
+  text-overflow: ellipsis;  /* add ... at the end */
+  vertical-align: middle;   /* keep text aligned */
+}
+
+
