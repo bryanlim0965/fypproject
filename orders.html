@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Store | My Orders</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="landing.css">
+
+  <style>
+    body {
+      background-color: #0b0b0b;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    h2 {
+      text-align: center;
+      color: #00ff80;
+      font-weight: 600;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+
+    .orders-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      background: #111;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0, 255, 100, 0.05);
+    }
+
+    .order-card {
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .order-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 10px rgba(0, 255, 100, 0.1);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .order-id {
+      color: #00ff80;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .order-date {
+      color: #bbb;
+      font-size: 0.9rem;
+    }
+
+    .order-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.6rem;
+      font-size: 0.95rem;
+    }
+
+    .order-status {
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-pending { background: #333; color: #ffb347; }
+    .status-confirmed { background: #003300; color: #00ff80; }
+    .status-cancelled { background: #330000; color: #ff4d4d; }
+
+    .login-message {
+      text-align: center;
+      font-size: 1.1rem;
+      color: #ccc;
+      margin-top: 50px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>My Orders</h2>
+    <div class="orders-container" id="ordersContainer">
+      <p class="login-message">Loading your orders...</p>
+    </div>
+  </main>
+
+  <!-- Firebase Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const ordersContainer = document.getElementById("ordersContainer");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        ordersContainer.innerHTML = '<p class="login-message">Please log in to view your orders.</p>';
+        return;
+      }
+
+      const ordersRef = collection(db, "users", user.uid, "orders");
+      const snap = await getDocs(ordersRef);
+
+      if (snap.empty) {
+        ordersContainer.innerHTML = '<p class="login-message">You have no orders yet.</p>';
+        return;
+      }
+
+      ordersContainer.innerHTML = "";
+      snap.forEach(docSnap => {
+        const order = docSnap.data();
+        const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
+        const dateStr = createdAt.toLocaleString("en-MY", { dateStyle: "medium", timeStyle: "short" });
+
+        const statusClass = order.status === "confirmed"
+          ? "status-confirmed"
+          : order.status === "cancelled"
+          ? "status-cancelled"
+          : "status-pending";
+
+        const card = document.createElement("div");
+        card.className = "order-card";
+        card.innerHTML = `
+  <div class="order-header">
+    <span class="order-id">Order ID: ${docSnap.id}</span>
+    <span class="order-date">${dateStr}</span>
+  </div>
+  <div class="order-info">
+    <span>Total: RM ${order.total?.toFixed(2) || "0.00"}</span>
+    <span class="order-status ${statusClass}">${order.status || "pending"}</span>
+  </div>
+  <button class="apply-btn" style="margin-top: 10px;" onclick="window.location.href='order-details.html?id=${docSnap.id}'">View Details</button>
+`;
+ordersContainer.appendChild(card);
+
+      });
+    });
+  </script>
+</body>
+</html>

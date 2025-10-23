@@ -437,5 +437,10 @@ body {
   background: #e02424;
 }
 
+#cartCount {
+  display: none; /* hide by default until logged in */
+}
+
+
 
 

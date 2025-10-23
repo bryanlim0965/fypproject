@@ -289,7 +289,198 @@ if(logoutBtn){
 }
 </script>
 
+<!-- 🟢 Load game details dynamically from Firestore -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  <script src="landing.js"></script>
+  // Same Firebase config (you can reuse your existing one)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Get game ID from URL
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get("id");
+
+  // Target elements
+  const gameCover = document.querySelector(".game-cover img");
+  const gameTitle = document.querySelector(".game-info h2");
+  const gamePrice = document.querySelector(".game-info .price");
+  const gameDesc  = document.querySelector(".game-info .desc");
+
+  async function loadGameDetails() {
+    if (!gameId) {
+      gameTitle.textContent = "Game not found";
+      gameDesc.textContent = "No game ID was provided in the URL.";
+      return;
+    }
+
+    try {
+      const docRef = doc(db, "games", gameId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        console.log("Loaded game:", data);
+
+        const title = data.title || data.name || "Untitled Game";
+        const price = data.price || 0;
+        const image = data.image || data.imageURL || "https://via.placeholder.com/400x500?text=No+Image";
+        const desc  = data.description || data.desc || "No description available.";
+
+        gameTitle.textContent = title;
+        gamePrice.textContent = `RM ${price.toLocaleString()}`;
+        gameDesc.textContent  = desc;
+        gameCover.src = image;
+        gameCover.alt = title;
+      } else {
+        gameTitle.textContent = "Game not found";
+        gameDesc.textContent = "This game may have been removed or does not exist.";
+      }
+    } catch (err) {
+      console.error("Error loading game:", err);
+      gameTitle.textContent = "Error loading game";
+      gameDesc.textContent = "An unexpected error occurred.";
+    }
+  }
+
+  loadGameDetails();
+</script>
+
+<!-- 🛒 Add to Cart Functionality -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // Reuse Firebase app already initialized above
+  const auth = getAuth();
+  const db = getFirestore();
+
+  const addToCartBtn = document.querySelector(".add-to-cart");
+  const qtyInput = document.getElementById("qty");
+
+  // Get game info from page
+  const gameTitle = document.querySelector(".game-info h2");
+  const gamePrice = document.querySelector(".game-info .price");
+  const gameCover = document.querySelector(".game-cover img");
+
+  addToCartBtn.addEventListener("click", async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("Please log in to add items to your cart.");
+      window.location.href = "#";
+      return;
+    }
+
+    const uid = user.uid;
+    const gameId = new URLSearchParams(window.location.search).get("id");
+    const quantity = parseInt(qtyInput.value) || 1;
+
+    // Prepare cart item data
+    const itemData = {
+      title: gameTitle.textContent,
+      price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
+      image: gameCover.src,
+      quantity: quantity,
+      addedAt: new Date()
+    };
+
+    const cartItemRef = doc(db, "users", uid, "cart", gameId);
+    const existingSnap = await getDoc(cartItemRef);
+
+    try {
+      if (existingSnap.exists()) {
+        // Update quantity if item already exists
+        await updateDoc(cartItemRef, {
+          quantity: increment(quantity)
+        });
+      } else {
+        // Create new cart item
+        await setDoc(cartItemRef, itemData);
+      }
+      alert("✅ Added to cart!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("❌ Failed to add item to cart.");
+    }
+  });
+</script>
+
+<!-- Firebase + user menu + points -->
+<script type="module">
+  // ... your existing Firebase login/logout logic ...
+</script>
+
+<!-- ✅ Hide cart bubble when logged out / Show when logged in -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const auth = getAuth();
+  const db = getFirestore();
+  const cartCountEl = document.getElementById("cartCount");
+
+  function updateCartCount(count) {
+    if (cartCountEl) {
+      cartCountEl.textContent = count;
+      // hide bubble completely if zero
+      cartCountEl.style.display = count > 0 ? "inline-flex" : "none";
+    }
+    localStorage.setItem("cartCount", count);
+  }
+
+  // Load saved count from localStorage (for smooth transition)
+  const savedCount = localStorage.getItem("cartCount");
+  if (savedCount !== null) {
+    updateCartCount(Number(savedCount));
+  } else if (cartCountEl) {
+    cartCountEl.style.display = "none";
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // 🟢 Logged in — show bubble and listen to Firestore cart
+      const cartRef = collection(db, "users", user.uid, "cart");
+      onSnapshot(cartRef, (snapshot) => {
+        let totalQty = 0;
+        snapshot.forEach((doc) => {
+          const item = doc.data();
+          totalQty += item.quantity || 0;
+        });
+        updateCartCount(totalQty);
+      });
+    } else {
+      // 🔴 Logged out — hide bubble and clear saved count
+      localStorage.removeItem("cartCount");
+      if (cartCountEl) {
+        cartCountEl.textContent = "0";
+        cartCountEl.style.display = "none";
+      }
+    }
+  });
+</script>
+
+<script src="landing.js?v=10"></script>
 </body>
 </html>
+
+
+<!-- Keep this last line -->
+<script src="landing.js"></script>
+</body>
+</html>
+
+
+
+
