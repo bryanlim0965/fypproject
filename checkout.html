@@ -287,8 +287,9 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { 
-    getFirestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc 
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  getFirestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 
   const firebaseConfig = {
     apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
@@ -444,43 +445,64 @@
     }
   });
 
-  // === Place order ===
-  placeOrderBtn.addEventListener("click", async () => {
-    if (!currentUser) return alert("Please log in first.");
-    if (cartItems.length === 0) return alert("Your cart is empty.");
-    if (paymentReceipt.files.length === 0) return alert("Please upload your payment receipt.");
+// === Place order ===
+placeOrderBtn.addEventListener("click", async () => {
+  if (!currentUser) return alert("Please log in first.");
+  if (cartItems.length === 0) return alert("Your cart is empty.");
+  if (paymentReceipt.files.length === 0) return alert("Please upload your payment receipt.");
 
-    const orderData = {
-      uid: currentUser.uid,
-      items: cartItems,
-      subtotal,
-      discount,
-      deliveryFee,
-      total: grandTotal,
-      pointsEarned,
-      deliveryOption: deliveryOption.value,
-      remarks: document.getElementById("orderRemarks").value,
-      address: {
-        address1: address1El.value,
-        city: cityEl.value,
-        postcode: postcodeEl.value,
-        country: "Malaysia"
-      },
-      paymentReceiptName: paymentReceipt.files[0].name,
-      createdAt: new Date(),
-      status: "pending"
-    };
+  // ✅ 1. Get user's address from Firestore (in case checkout fields are empty)
+  const userRef = doc(db, "users", currentUser.uid);
+  const userSnap = await getDoc(userRef);
+  let addressData = {
+    address1: address1El.value || "-",
+    city: cityEl.value || "-",
+    postcode: postcodeEl.value || "-",
+    country: "Malaysia"
+  };
 
-    const orderRef = doc(collection(db, "users", currentUser.uid, "orders"));
-    await setDoc(orderRef, orderData);
-
-    for (const item of cartItems) {
-      await deleteDoc(doc(db, "users", currentUser.uid, "cart", item.id));
+  if (userSnap.exists()) {
+    const data = userSnap.data();
+    if (data.address) {
+      addressData = {
+        address1: data.address.address1 || addressData.address1,
+        city: data.address.city || addressData.city,
+        postcode: data.address.postcode || addressData.postcode,
+        country: data.address.country || "Malaysia"
+      };
     }
+  }
 
-    alert("Order placed successfully!");
-    window.location.href = "order-confirmation.html";
-  });
+  // ✅ 2. Prepare order data with full address
+  const orderData = {
+    uid: currentUser.uid,
+    items: cartItems,
+    subtotal,
+    discount,
+    deliveryFee,
+    total: grandTotal,
+    pointsEarned,
+    deliveryOption: deliveryOption.value,
+    remarks: document.getElementById("orderRemarks").value,
+    address: addressData,
+    paymentReceiptName: paymentReceipt.files[0].name,
+    createdAt: serverTimestamp(),
+    status: "pending"
+  };
+
+  // ✅ 3. Save order
+  const orderRef = doc(collection(db, "users", currentUser.uid, "orders"));
+  await setDoc(orderRef, orderData);
+
+  // ✅ 4. Clear user's cart
+  for (const item of cartItems) {
+    await deleteDoc(doc(db, "users", currentUser.uid, "cart", item.id));
+  }
+
+  alert("Order placed successfully!");
+  window.location.href = "order-confirmation.html";
+});
+
 </script>
 
 </body>

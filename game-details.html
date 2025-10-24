@@ -234,23 +234,35 @@ function showLoggedOutDisplay(){
 }
 
 // Instant display using localStorage to prevent flicker
-let storedName = localStorage.getItem("username");
-let storedPoints = localStorage.getItem("points");
-if(storedName){
-  showLoggedInDisplay(storedName, storedPoints || 0);
-}
+let name = localStorage.getItem("name");
+let points = localStorage.getItem("points");
+if (name) showLoggedInDisplay(name, points);
 
-// Firebase auth listener
-onAuthStateChanged(auth, async (user)=>{
-  if(user){
-    const uid = user.uid;
-    const email = user.email;
-    const data = await fetchUserData(uid, email);
-    localStorage.setItem("username", data.name);
-    localStorage.setItem("points", data.points);
-    showLoggedInDisplay(data.name, data.points, email);
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Create user record if not found
+      await setDoc(userRef, {
+        name: user.displayName || user.email.split("@")[0],
+        email: user.email,
+        phone: "",
+        points: 0
+      });
+    }
+
+    const userData = (await getDoc(userRef)).data();
+
+    // Store in localStorage
+    localStorage.setItem("name", userData.name);
+    localStorage.setItem("points", userData.points);
+
+    // Display user's full name
+    showLoggedInDisplay(userData.name, userData.points);
   } else {
-    localStorage.removeItem("username");
+    localStorage.removeItem("name");
     localStorage.removeItem("points");
     showLoggedOutDisplay();
   }

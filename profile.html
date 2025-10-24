@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Profile | Game Store</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+
+  <style>
+    body {
+      background-color: #0b0b0b;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #111;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 0 25px rgba(0, 255, 100, 0.05);
+    }
+
+    h2 {
+      text-align: center;
+      color: #00ff80;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .section {
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      color: #00ff80;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .info-field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+
+    .info-field label {
+      font-size: 0.9rem;
+      color: #bbb;
+      margin-bottom: 0.3rem;
+    }
+
+    .info-field input, .info-field select {
+      background: #222;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 0.6rem;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .info-field input[readonly], .info-field select[disabled] {
+      background: #222;
+      color: #888;
+    }
+
+    .info-field input.editable, .info-field select.editable {
+      background: #fff;
+      color: #000;
+    }
+
+    .edit-btn {
+      display: inline-block;
+      background: #00ff80;
+      color: #111;
+      font-weight: 600;
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .edit-btn:hover {
+      background: #00e070;
+    }
+
+    .back-btn {
+      display: inline-block;
+      background: #4444ff;
+      color: #fff;
+      font-weight: 600;
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background: #3333dd;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>My Profile</h2>
+
+    <div class="section">
+      <h3>Account Information</h3>
+      <div class="info-field">
+        <label>Name</label>
+        <input type="text" id="name" readonly>
+      </div>
+      <div class="info-field">
+        <label>Email</label>
+        <input type="email" id="email" readonly>
+      </div>
+      <div class="info-field">
+        <label>Phone</label>
+        <input type="text" id="phone" readonly>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Shipping Address</h3>
+      <div class="info-field">
+        <label>Address Line</label>
+        <input type="text" id="address1" readonly>
+      </div>
+      <div class="info-field">
+        <label>State</label>
+        <select id="city" disabled>
+          <option>Johor</option>
+          <option>Kedah</option>
+          <option>Kelantan</option>
+          <option>Melaka</option>
+          <option>Negeri Sembilan</option>
+          <option>Pahang</option>
+          <option>Penang</option>
+          <option>Perak</option>
+          <option>Perlis</option>
+          <option>Sabah</option>
+          <option>Sarawak</option>
+          <option>Selangor</option>
+          <option>Terengganu</option>
+          <option>Kuala Lumpur</option>
+          <option>Putrajaya</option>
+          <option>Labuan</option>
+        </select>
+      </div>
+      <div class="info-field">
+        <label>Postcode</label>
+        <input type="text" id="postcode" readonly>
+      </div>
+      <div class="info-field">
+        <label>Country</label>
+        <input type="text" value="Malaysia" readonly>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Order Statistics</h3>
+      <p>Total Orders: <strong id="orderCount">0</strong></p>
+    </div>
+
+    <div class="btn-row">
+      <button id="editProfileBtn" class="edit-btn">Edit</button>
+      <button id="backBtn" class="back-btn">Back</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const editBtn = document.getElementById("editProfileBtn");
+    const backBtn = document.getElementById("backBtn");
+
+    const fields = ["name", "phone", "address1", "city", "postcode"];
+    let isEditing = false;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Please log in first.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      // Load user info
+      document.getElementById("name").value = user.displayName || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("phone").value = user.phoneNumber || "";
+
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.address) {
+          document.getElementById("address1").value = data.address.address1 || "";
+          document.getElementById("city").value = data.address.city || "";
+          document.getElementById("postcode").value = data.address.postcode || "";
+        }
+        if (data.phone) document.getElementById("phone").value = data.phone;
+        if (data.name) document.getElementById("name").value = data.name;
+      }
+
+      // Count orders
+      const ordersRef = collection(db, "users", user.uid, "orders");
+      const ordersSnap = await getDocs(ordersRef);
+      document.getElementById("orderCount").textContent = ordersSnap.size;
+    });
+
+    editBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const inputs = fields.map(id => document.getElementById(id));
+      const selectCity = document.getElementById("city");
+
+      if (!isEditing) {
+        isEditing = true;
+        editBtn.textContent = "Save";
+        inputs.forEach(el => {
+          el.removeAttribute("readonly");
+          el.classList.add("editable");
+        });
+        selectCity.disabled = false;
+        selectCity.classList.add("editable");
+      } else {
+        isEditing = false;
+        editBtn.textContent = "Edit";
+        inputs.forEach(el => {
+          el.setAttribute("readonly", true);
+          el.classList.remove("editable");
+        });
+        selectCity.disabled = true;
+        selectCity.classList.remove("editable");
+
+        const name = document.getElementById("name").value;
+        const phone = document.getElementById("phone").value;
+        const address1 = document.getElementById("address1").value;
+        const city = document.getElementById("city").value;
+        const postcode = document.getElementById("postcode").value;
+
+        const userRef = doc(db, "users", user.uid);
+        await setDoc(userRef, {
+          name,
+          phone,
+          address: {
+            address1,
+            city,
+            postcode,
+            country: "Malaysia"
+          }
+        }, { merge: true });
+
+        // Also update Firebase Auth display name
+        await updateProfile(user, { displayName: name });
+
+        alert("Profile updated successfully!");
+      }
+    });
+
+    backBtn.addEventListener("click", () => {
+      window.location.href = "landing.html"; // change if your main page has different name
+    });
+  </script>
+</body>
+</html>
