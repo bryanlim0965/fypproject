@@ -299,6 +299,9 @@
     messagingSenderId: "537245015385",
     appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
   };
+  const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dqgvby5lb/image/upload";
+const CLOUDINARY_PRESET = "payment_receipts";
+
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -445,63 +448,72 @@
     }
   });
 
+
 // === Place order ===
 placeOrderBtn.addEventListener("click", async () => {
   if (!currentUser) return alert("Please log in first.");
   if (cartItems.length === 0) return alert("Your cart is empty.");
   if (paymentReceipt.files.length === 0) return alert("Please upload your payment receipt.");
 
-  // ✅ 1. Get user's address from Firestore (in case checkout fields are empty)
-  const userRef = doc(db, "users", currentUser.uid);
-  const userSnap = await getDoc(userRef);
-  let addressData = {
-    address1: address1El.value || "-",
-    city: cityEl.value || "-",
-    postcode: postcodeEl.value || "-",
-    country: "Malaysia"
-  };
+  try {
+    // ✅ 1. Upload receipt image to Cloudinary
+    const file = paymentReceipt.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_PRESET);
 
-  if (userSnap.exists()) {
-    const data = userSnap.data();
-    if (data.address) {
-      addressData = {
-        address1: data.address.address1 || addressData.address1,
-        city: data.address.city || addressData.city,
-        postcode: data.address.postcode || addressData.postcode,
-        country: data.address.country || "Malaysia"
-      };
+    const cloudRes = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+    const cloudData = await cloudRes.json();
+
+    if (!cloudData.secure_url) {
+      console.error("Cloudinary upload error:", cloudData);
+      return alert("❌ Upload failed. Please try again.");
     }
+
+    const receiptURL = cloudData.secure_url;
+
+    // ✅ 2. Get user's address (ensure filled)
+    let addressData = {
+      address1: address1El.value || "-",
+      city: cityEl.value || "-",
+      postcode: postcodeEl.value || "-",
+      country: "Malaysia"
+    };
+
+    // ✅ 3. Prepare order data
+    const orderData = {
+      uid: currentUser.uid,
+      items: cartItems,
+      subtotal,
+      discount,
+      deliveryFee,
+      total: grandTotal,
+      pointsEarned,
+      deliveryOption: deliveryOption.value,
+      remarks: document.getElementById("orderRemarks").value,
+      address: addressData,
+      paymentReceiptName: receiptURL, // ✅ now stores Cloudinary URL
+      createdAt: serverTimestamp(),
+      status: "pending"
+    };
+
+    // ✅ 4. Save to Firestore
+    const orderRef = doc(collection(db, "users", currentUser.uid, "orders"));
+    await setDoc(orderRef, orderData);
+
+    // ✅ 5. Clear cart
+    for (const item of cartItems) {
+      await deleteDoc(doc(db, "users", currentUser.uid, "cart", item.id));
+    }
+
+    alert("✅ Order placed successfully!");
+    window.location.href = "order-confirmation.html";
+  } catch (err) {
+    console.error("Place order error:", err);
+    alert("❌ Something went wrong. Check console for details.");
   }
-
-  // ✅ 2. Prepare order data with full address
-  const orderData = {
-    uid: currentUser.uid,
-    items: cartItems,
-    subtotal,
-    discount,
-    deliveryFee,
-    total: grandTotal,
-    pointsEarned,
-    deliveryOption: deliveryOption.value,
-    remarks: document.getElementById("orderRemarks").value,
-    address: addressData,
-    paymentReceiptName: paymentReceipt.files[0].name,
-    createdAt: serverTimestamp(),
-    status: "pending"
-  };
-
-  // ✅ 3. Save order
-  const orderRef = doc(collection(db, "users", currentUser.uid, "orders"));
-  await setDoc(orderRef, orderData);
-
-  // ✅ 4. Clear user's cart
-  for (const item of cartItems) {
-    await deleteDoc(doc(db, "users", currentUser.uid, "cart", item.id));
-  }
-
-  alert("Order placed successfully!");
-  window.location.href = "order-confirmation.html";
 });
+
 
 </script>
 

@@ -100,14 +100,19 @@
     }
 
     .modal-content h4 {
-  margin-bottom: 5px; /* reduce space under the heading */
-}
+      margin-bottom: 5px;
+    }
 
-.modal-content p {
-  margin-top: 4px; /* reduce space above each line */
-  margin-bottom: 4px;
-}
+    .modal-content p {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
 
+    hr {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body class="order-page">
@@ -152,7 +157,6 @@
       <p><strong>Email:</strong> <span id="modalEmail"></span></p>
       <p><strong>Phone:</strong> <span id="modalPhone"></span></p>
 
-      <!-- Split shipping address -->
       <h4 style="margin-top:15px;">Shipping Address</h4>
       <p><strong>Address:</strong> <span id="modalAddress1"></span></p>
       <p><strong>Postcode:</strong> <span id="modalPostcode"></span></p>
@@ -160,13 +164,34 @@
       <p><strong>Country:</strong> <span id="modalCountry"></span></p>
 
       <hr />
-      <p><strong>Total Items:</strong> <span id="modalItems"></span></p>
+
+      <!-- Items section -->
+      <div id="modalItemsContainer">
+        <p><strong>Total Items:</strong> <span id="modalItems"></span></p>
+        <ul id="modalItemList" style="margin-top:5px; padding-left:18px;"></ul>
+      </div>
+
+      <hr />
+
       <p><strong>Delivery Option:</strong> <span id="modalDelivery"></span></p>
       <p><strong>Remarks:</strong> <span id="modalRemarks"></span></p>
-      <div id="modalPaymentImageContainer" style="display:none;">
+
+      <!-- ✅ New Payment Receipt Row -->
+      <div id="modalPaymentImageContainer" style="display:none; margin-top:10px;">
         <p><strong>Payment Receipt:</strong></p>
         <button class="view-btn" id="viewReceiptBtn">View Receipt</button>
       </div>
+
+      <p style="margin-top:15px;"><strong>Total Amount (RM):</strong> <span id="modalTotalAmount"></span></p>
+    </div>
+  </div>
+
+  <!-- ✅ Receipt Preview Modal -->
+  <div id="receiptModal" class="modal">
+    <div class="modal-content" style="max-width:600px; text-align:center;">
+      <span class="close" id="closeReceiptModal">&times;</span>
+      <h3>Payment Receipt</h3>
+      <img id="receiptImage" src="" alt="Payment Receipt" style="max-width:100%; border-radius:8px; margin-top:10px;">
     </div>
   </div>
 
@@ -197,8 +222,8 @@
       }
 
       const orders = querySnapshot.docs.sort((a, b) => {
-        const aTime = a.data().createdAt?.seconds || a.data().timestamp?.seconds || 0;
-        const bTime = b.data().createdAt?.seconds || b.data().timestamp?.seconds || 0;
+        const aTime = a.data().createdAt?.seconds || 0;
+        const bTime = b.data().createdAt?.seconds || 0;
         return bTime - aTime;
       });
 
@@ -243,34 +268,69 @@
       const userSnap = await getDoc(doc(db, "users", info.uid));
       const userData = userSnap.exists() ? userSnap.data() : {};
 
-      // User info
       document.getElementById("modalUsername").textContent = userData.username || "Unknown";
       document.getElementById("modalName").textContent = userData.name || "-";
       document.getElementById("modalEmail").textContent = userData.email || "-";
       document.getElementById("modalPhone").textContent = userData.phone || "-";
 
-      // ✅ Split Address
       const address = data.address || {};
       document.getElementById("modalAddress1").textContent = address.address1 || "-";
       document.getElementById("modalCity").textContent = address.city || "-";
       document.getElementById("modalPostcode").textContent = address.postcode || "-";
       document.getElementById("modalCountry").textContent = address.country || "-";
 
-      // Order details
       document.getElementById("modalItems").textContent = (data.items?.length || 0);
-      document.getElementById("modalDelivery").textContent = data.deliveryOption || "-";
-      document.getElementById("modalRemarks").textContent = data.remarks || "-";
-
-      // Payment
-      const viewReceiptBtn = document.getElementById("viewReceiptBtn");
-      if (data.paymentImageURL) {
-        document.getElementById("modalPaymentImageContainer").style.display = "block";
-        viewReceiptBtn.onclick = () => window.open(data.paymentImageURL, "_blank");
-      } else {
-        document.getElementById("modalPaymentImageContainer").style.display = "none";
+      const itemList = document.getElementById("modalItemList");
+      itemList.innerHTML = "";
+      if (Array.isArray(data.items)) {
+        data.items.forEach(item => {
+          const li = document.createElement("li");
+          const itemName = item.name || item.title || item.productName || item.gameName || "Unnamed Item";
+          li.textContent = `${item.quantity || 1}× ${itemName} – RM ${(item.price || 0).toFixed(2)}`;
+          itemList.appendChild(li);
+        });
       }
 
-      document.getElementById("orderModal").style.display = "block";
+      document.getElementById("modalDelivery").textContent =
+        `${data.deliveryOption || "-"}${data.deliveryFee ? ` (+RM ${data.deliveryFee.toFixed(2)})` : ""}`;
+      document.getElementById("modalRemarks").textContent = data.remarks || "-";
+      document.getElementById("modalTotalAmount").textContent = (data.total || 0).toFixed(2);
+
+      // ✅ Payment Modal Preview
+// ✅ Payment Modal Preview (with image popup inside modal)
+const viewReceiptBtn = document.getElementById("viewReceiptBtn");
+const receiptModal = document.getElementById("receiptModal");
+const receiptImage = document.getElementById("receiptImage");
+const closeReceiptModal = document.getElementById("closeReceiptModal");
+
+// ✅ Show payment receipt image if available
+if (data.paymentReceiptName) {
+  document.getElementById("modalPaymentImageContainer").style.display = "block";
+
+  viewReceiptBtn.onclick = () => {
+    receiptImage.src = data.paymentReceiptName; // show the Cloudinary image
+    receiptModal.style.display = "block"; // open modal
+  };
+} else {
+  document.getElementById("modalPaymentImageContainer").style.display = "none";
+}
+
+// ✅ Close modal when clicking the (×) button
+closeReceiptModal.onclick = () => {
+  receiptModal.style.display = "none";
+};
+
+// ✅ Also close when clicking outside the image area
+window.onclick = (event) => {
+  if (event.target === receiptModal) {
+    receiptModal.style.display = "none";
+  }
+};
+
+// ✅ Show order modal
+document.getElementById("orderModal").style.display = "block";
+
+
     };
 
     window.closeModal = function() {
