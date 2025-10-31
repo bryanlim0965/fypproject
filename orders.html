@@ -80,9 +80,31 @@
       text-transform: capitalize;
     }
 
+    /* === STATUS COLORS === */
     .status-pending { background: #333; color: #ffb347; }
     .status-confirmed { background: #003300; color: #00ff80; }
     .status-cancelled { background: #330000; color: #ff4d4d; }
+
+    /* ✅ New ones */
+    .status-approved { background: #003300; color: #00ff80; }
+    .status-rejected { background: #330000; color: #ff4d4d; }
+
+    .apply-btn {
+      display: inline-block;
+      background: #00ff80;
+      color: #111;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .apply-btn:hover {
+      background: #00e070;
+    }
 
     .login-message {
       text-align: center;
@@ -135,32 +157,33 @@
       }
 
       ordersContainer.innerHTML = "";
+
       snap.forEach(docSnap => {
         const order = docSnap.data();
         const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
         const dateStr = createdAt.toLocaleString("en-MY", { dateStyle: "medium", timeStyle: "short" });
 
-        const statusClass = order.status === "confirmed"
-          ? "status-confirmed"
-          : order.status === "cancelled"
-          ? "status-cancelled"
-          : "status-pending";
+        // ✅ Updated status handling
+        let statusClass = "status-pending";
+        if (order.status === "approved") statusClass = "status-approved";
+        else if (order.status === "rejected") statusClass = "status-rejected";
+        else if (order.status === "confirmed") statusClass = "status-confirmed";
+        else if (order.status === "cancelled") statusClass = "status-cancelled";
 
         const card = document.createElement("div");
         card.className = "order-card";
         card.innerHTML = `
-  <div class="order-header">
-    <span class="order-id">Order ID: ${docSnap.id}</span>
-    <span class="order-date">${dateStr}</span>
-  </div>
-  <div class="order-info">
-    <span>Total: RM ${order.total?.toFixed(2) || "0.00"}</span>
-    <span class="order-status ${statusClass}">${order.status || "pending"}</span>
-  </div>
-  <button class="apply-btn" style="margin-top: 10px;" onclick="window.location.href='order-details.html?id=${docSnap.id}'">View Details</button>
-`;
-ordersContainer.appendChild(card);
-
+          <div class="order-header">
+            <span class="order-id">Order ID: ${docSnap.id}</span>
+            <span class="order-date">${dateStr}</span>
+          </div>
+          <div class="order-info">
+            <span>Total: RM ${order.total?.toFixed(2) || "0.00"}</span>
+            <span class="order-status ${statusClass}">${order.status || "pending"}</span>
+          </div>
+          <button class="apply-btn" style="margin-top: 10px;" onclick="window.location.href='order-details.html?id=${docSnap.id}'">View Details</button>
+        `;
+        ordersContainer.appendChild(card);
       });
     });
   </script>

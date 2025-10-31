@@ -7,114 +7,86 @@
   <link rel="stylesheet" href="admin.css" />
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
   <style>
-    body {
-      background: #fff;
-      color: #000;
-    }
+    body { background: #fff; color: #000; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ccc;
-      color: #000;
+      padding: 10px; text-align: left; border-bottom: 1px solid #ccc; color: #000;
     }
-
-    th {
-      background-color: #f0f0f0;
-    }
+    th { background-color: #f0f0f0; }
 
     .btn {
-      background: #28a745;
-      border: none;
-      color: #fff;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: 0.2s;
+      background: #28a745; border: none; color: #fff;
+      padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s;
     }
-
-    .btn:hover {
-      background: #218838;
-    }
+    .btn:hover { background: #218838; }
 
     /* Modal */
     .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background: rgba(0, 0, 0, 0.5);
+      display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+      width: 100%; height: 100%; overflow: auto; background: rgba(0, 0, 0, 0.5);
     }
-
     .modal-content {
-      text-align: left;
-      max-width: 500px;
-      margin: 8% auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      color: #000;
+      text-align: left; max-width: 500px; margin: 8% auto;
+      background: #fff; padding: 20px; border-radius: 10px; color: #000;
     }
-
-    .modal h3 {
-      margin-bottom: 10px;
-    }
-
-    .modal p {
-      margin: 5px 0;
-    }
-
     .close {
-      float: right;
-      font-size: 24px;
-      font-weight: bold;
-      cursor: pointer;
-      color: #333;
+      float: right; font-size: 24px; font-weight: bold; cursor: pointer; color: #333;
     }
-
-    .close:hover {
-      color: red;
-    }
+    .close:hover { color: red; }
 
     .view-btn {
+      background: #007bff; color: #fff; padding: 6px 12px;
+      border: none; border-radius: 5px; cursor: pointer;
+    }
+    .view-btn:hover { background: #0056b3; }
+
+    .action-buttons {
+      display: flex; gap: 10px; margin-top: 15px;
+    }
+    .approve-btn { background: #28a745; color: #fff; padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; }
+    .approve-btn:hover { background: #218838; }
+    .reject-btn { background: #dc3545; color: #fff; padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; }
+    .reject-btn:hover { background: #c82333; }
+
+    /* Tabs */
+    .order-nav {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .tab-btn {
+      background: #eee;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .tab-btn.active {
       background: #007bff;
       color: #fff;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
     }
 
-    .view-btn:hover {
-      background: #0056b3;
+    /* Search */
+    .search-container {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-
-    .modal-content h4 {
-      margin-bottom: 5px;
-    }
-
-    .modal-content p {
-      margin-top: 4px;
-      margin-bottom: 4px;
-    }
-
-    hr {
-      border: none;
-      border-top: 1px solid #ccc;
-      margin: 10px 0;
+    .search-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
   </style>
 </head>
+
 <body class="order-page">
   <div class="sidebar">
     <h2>Admin Panel</h2>
@@ -131,19 +103,51 @@
   <div class="main-content">
     <div class="card">
       <h3>Order Management</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Date/Time</th>
-            <th>Order ID</th>
-            <th>User</th>
-            <th>Status</th>
-            <th>Total (RM)</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="ordersBody"></tbody>
-      </table>
+
+      <!-- Tabs Navbar -->
+      <div class="order-nav">
+        <button class="tab-btn active" onclick="showSection('pending', event)">Pending Orders</button>
+        <button class="tab-btn" onclick="showSection('past', event)">Past Orders</button>
+      </div>
+
+      <!-- Search -->
+      <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by username, order ID, or status..." onkeyup="filterOrders()">
+      </div>
+
+      <!-- Pending Orders -->
+      <div id="pendingSection">
+        <table>
+          <thead>
+            <tr>
+              <th>Date/Time</th>
+              <th>Order ID</th>
+              <th>User</th>
+              <th>Status</th>
+              <th>Total (RM)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingOrdersBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Past Orders -->
+      <div id="pastSection" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date/Time</th>
+              <th>Order ID</th>
+              <th>User</th>
+              <th>Status</th>
+              <th>Total (RM)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pastOrdersBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -165,7 +169,6 @@
 
       <hr />
 
-      <!-- Items section -->
       <div id="modalItemsContainer">
         <p><strong>Total Items:</strong> <span id="modalItems"></span></p>
         <ul id="modalItemList" style="margin-top:5px; padding-left:18px;"></ul>
@@ -175,18 +178,24 @@
 
       <p><strong>Delivery Option:</strong> <span id="modalDelivery"></span></p>
       <p><strong>Remarks:</strong> <span id="modalRemarks"></span></p>
+      <p><strong>Status:</strong> <span id="modalStatus"></span></p>
+      <p id="modalRejectionReasonContainer" style="display:none;"><strong>Rejection Reason:</strong> <span id="modalRejectionReason"></span></p>
 
-      <!-- ✅ New Payment Receipt Row -->
       <div id="modalPaymentImageContainer" style="display:none; margin-top:10px;">
         <p><strong>Payment Receipt:</strong></p>
         <button class="view-btn" id="viewReceiptBtn">View Receipt</button>
       </div>
 
       <p style="margin-top:15px;"><strong>Total Amount (RM):</strong> <span id="modalTotalAmount"></span></p>
+
+      <div class="action-buttons">
+        <button class="approve-btn" id="approveBtn">Approve</button>
+        <button class="reject-btn" id="rejectBtn">Reject</button>
+      </div>
     </div>
   </div>
 
-  <!-- ✅ Receipt Preview Modal -->
+  <!-- Receipt Modal -->
   <div id="receiptModal" class="modal">
     <div class="modal-content" style="max-width:600px; text-align:center;">
       <span class="close" id="closeReceiptModal">&times;</span>
@@ -197,7 +206,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-    import { getFirestore, collectionGroup, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+    import { getFirestore, collectionGroup, getDocs, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
@@ -210,16 +219,18 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const ordersBody = document.getElementById("ordersBody");
+
+    const pendingOrdersBody = document.getElementById("pendingOrdersBody");
+    const pastOrdersBody = document.getElementById("pastOrdersBody");
+    const searchInput = document.getElementById("searchInput");
+
+    let allOrders = [];
 
     async function loadOrders() {
       const querySnapshot = await getDocs(collectionGroup(db, "orders"));
-      ordersBody.innerHTML = "";
-
-      if (querySnapshot.empty) {
-        ordersBody.innerHTML = "<tr><td colspan='6'>No orders found.</td></tr>";
-        return;
-      }
+      pendingOrdersBody.innerHTML = "";
+      pastOrdersBody.innerHTML = "";
+      allOrders = [];
 
       const orders = querySnapshot.docs.sort((a, b) => {
         const aTime = a.data().createdAt?.seconds || 0;
@@ -241,31 +252,78 @@
           console.error("Error fetching user:", err);
         }
 
-        const orderDate = data.createdAt
-          ? new Date(data.createdAt.seconds * 1000).toLocaleString()
-          : "N/A";
+        const orderObj = {
+          id: docSnap.id,
+          uid: userId,
+          username,
+          status: data.status || "Pending",
+          total: data.total || 0,
+          createdAt: data.createdAt
+            ? new Date(data.createdAt.seconds * 1000).toLocaleString()
+            : "N/A"
+        };
 
+        allOrders.push(orderObj);
+      }
+
+      displayOrders();
+    }
+
+    function displayOrders() {
+      pendingOrdersBody.innerHTML = "";
+      pastOrdersBody.innerHTML = "";
+
+      const filter = searchInput.value.toLowerCase();
+      const filteredOrders = allOrders.filter(order =>
+        order.username.toLowerCase().includes(filter) ||
+        order.id.toLowerCase().includes(filter) ||
+        order.status.toLowerCase().includes(filter)
+      );
+
+      for (const order of filteredOrders) {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td>${orderDate}</td>
-          <td>${docSnap.id}</td>
-          <td>${username}</td>
-          <td>${data.status || "Pending"}</td>
-          <td>RM ${(data.total || 0).toFixed(2)}</td>
-          <td><button class="btn" onclick='openModal(${JSON.stringify(JSON.stringify({ id: docSnap.id, uid: userId }))})'>View</button></td>
+          <td>${order.createdAt}</td>
+          <td>${order.id}</td>
+          <td>${order.username}</td>
+          <td>${order.status}</td>
+          <td>RM ${order.total.toFixed(2)}</td>
+          <td><button class="btn" onclick='openModal("${order.id}","${order.uid}")'>View</button></td>
         `;
-        ordersBody.appendChild(row);
+
+        if (order.status.toLowerCase() === "pending" || order.status.toLowerCase() === "processing") {
+          pendingOrdersBody.appendChild(row);
+        } else {
+          pastOrdersBody.appendChild(row);
+        }
+      }
+
+      if (!pendingOrdersBody.hasChildNodes()) {
+        pendingOrdersBody.innerHTML = "<tr><td colspan='6'>No pending orders found.</td></tr>";
+      }
+      if (!pastOrdersBody.hasChildNodes()) {
+        pastOrdersBody.innerHTML = "<tr><td colspan='6'>No past orders found.</td></tr>";
       }
     }
 
-    window.openModal = async function(orderInfo) {
-      const info = JSON.parse(orderInfo);
-      const orderRef = doc(db, "users", info.uid, "orders", info.id);
+    window.filterOrders = displayOrders;
+
+    window.showSection = function(section, event) {
+      document.getElementById("pendingSection").style.display = section === "pending" ? "block" : "none";
+      document.getElementById("pastSection").style.display = section === "past" ? "block" : "none";
+
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      event.target.classList.add("active");
+    };
+
+    // ✅ Open Modal
+    window.openModal = async function(orderId, userId) {
+      const orderRef = doc(db, "users", userId, "orders", orderId);
       const orderSnap = await getDoc(orderRef);
       if (!orderSnap.exists()) return alert("Order not found.");
 
       const data = orderSnap.data();
-      const userSnap = await getDoc(doc(db, "users", info.uid));
+      const userSnap = await getDoc(doc(db, "users", userId));
       const userData = userSnap.exists() ? userSnap.data() : {};
 
       document.getElementById("modalUsername").textContent = userData.username || "Unknown";
@@ -294,48 +352,58 @@
       document.getElementById("modalDelivery").textContent =
         `${data.deliveryOption || "-"}${data.deliveryFee ? ` (+RM ${data.deliveryFee.toFixed(2)})` : ""}`;
       document.getElementById("modalRemarks").textContent = data.remarks || "-";
+      document.getElementById("modalStatus").textContent = data.status || "Pending";
+
+      if (data.rejectionReason) {
+        document.getElementById("modalRejectionReasonContainer").style.display = "block";
+        document.getElementById("modalRejectionReason").textContent = data.rejectionReason;
+      } else {
+        document.getElementById("modalRejectionReasonContainer").style.display = "none";
+      }
+
       document.getElementById("modalTotalAmount").textContent = (data.total || 0).toFixed(2);
 
-      // ✅ Payment Modal Preview
-// ✅ Payment Modal Preview (with image popup inside modal)
-const viewReceiptBtn = document.getElementById("viewReceiptBtn");
-const receiptModal = document.getElementById("receiptModal");
-const receiptImage = document.getElementById("receiptImage");
-const closeReceiptModal = document.getElementById("closeReceiptModal");
+      const viewReceiptBtn = document.getElementById("viewReceiptBtn");
+      const receiptModal = document.getElementById("receiptModal");
+      const receiptImage = document.getElementById("receiptImage");
+      const closeReceiptModal = document.getElementById("closeReceiptModal");
 
-// ✅ Show payment receipt image if available
-if (data.paymentReceiptName) {
-  document.getElementById("modalPaymentImageContainer").style.display = "block";
+      if (data.paymentReceiptName) {
+        document.getElementById("modalPaymentImageContainer").style.display = "block";
+        viewReceiptBtn.onclick = () => {
+          receiptImage.src = data.paymentReceiptName;
+          receiptModal.style.display = "block";
+        };
+      } else {
+        document.getElementById("modalPaymentImageContainer").style.display = "none";
+      }
 
-  viewReceiptBtn.onclick = () => {
-    receiptImage.src = data.paymentReceiptName; // show the Cloudinary image
-    receiptModal.style.display = "block"; // open modal
-  };
-} else {
-  document.getElementById("modalPaymentImageContainer").style.display = "none";
-}
+      closeReceiptModal.onclick = () => { receiptModal.style.display = "none"; };
+      window.onclick = (event) => { if (event.target === receiptModal) receiptModal.style.display = "none"; };
 
-// ✅ Close modal when clicking the (×) button
-closeReceiptModal.onclick = () => {
-  receiptModal.style.display = "none";
-};
+      document.getElementById("orderModal").style.display = "block";
 
-// ✅ Also close when clicking outside the image area
-window.onclick = (event) => {
-  if (event.target === receiptModal) {
-    receiptModal.style.display = "none";
-  }
-};
+      // Approve
+      document.getElementById("approveBtn").onclick = async () => {
+        await updateDoc(orderRef, { status: "approved" });
+        await updateDoc(doc(db, "users", userId), { points: increment(data.pointsEarned || 0) });
+        alert("Order approved and points added!");
+        closeModal();
+        loadOrders();
+      };
 
-// ✅ Show order modal
-document.getElementById("orderModal").style.display = "block";
-
-
+      // Reject
+      document.getElementById("rejectBtn").onclick = async () => {
+        const reason = prompt("Enter rejection reason:");
+        if (!reason) return alert("Rejection reason is required.");
+        await updateDoc(orderRef, { status: "rejected", rejectionReason: reason });
+        alert("Order rejected!");
+        closeModal();
+        loadOrders();
+      };
     };
 
-    window.closeModal = function() {
-      document.getElementById("orderModal").style.display = "none";
-    };
+    window.closeModal = function() { document.getElementById("orderModal").style.display = "none"; };
 
     loadOrders();
   </script>

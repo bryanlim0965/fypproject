@@ -1,52 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Management</title>
-  <link rel="stylesheet" href="admin.css">
-  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-</head>
-<body>
+  <link rel="stylesheet" href="admin.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
 
+  <style>
+    body { background: #fff; color: #000; }
+
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 10px;
+    }
+    th, td {
+      padding: 10px; text-align: left; border-bottom: 1px solid #ccc; color: #000;
+    }
+    th { background-color: #f0f0f0; }
+
+    .btn {
+      background: #007bff; border: none; color: #fff;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+    }
+    .btn:hover { background: #0056b3; }
+
+    /* Modals */
+    .modal {
+      display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+      width: 100%; height: 100%; overflow: auto; background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      max-width: 600px; background: #fff; margin: 5% auto; padding: 20px;
+      border-radius: 10px; color: #000;
+    }
+    .close {
+      float: right; font-size: 24px; font-weight: bold; cursor: pointer; color: #333;
+    }
+    .close:hover { color: red; }
+
+    input, select {
+      width: 100%; padding: 8px; margin: 5px 0 10px; border-radius: 5px; border: 1px solid #ccc;
+    }
+
+    #searchBar {
+      width: 300px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+
+    .order-list {
+      margin-top: 10px;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .order-item {
+      padding: 6px;
+      border-bottom: 1px solid #ddd;
+    }
+    .order-item:last-child {
+      border-bottom: none;
+    }
+
+    .action-buttons { display:flex; gap:10px; margin-top:15px; }
+    .approve-btn { background:#28a745;color:#fff;padding:8px 14px;border:none;border-radius:6px;cursor:pointer; }
+    .approve-btn:hover { background:#218838; }
+    .reject-btn { background:#dc3545;color:#fff;padding:8px 14px;border:none;border-radius:6px;cursor:pointer; }
+    .reject-btn:hover { background:#c82333; }
+
+    .reason-text { color: red; font-weight: 500; }
+
+  </style>
+</head>
+
+<body>
   <div class="sidebar">
     <h2>Admin Panel</h2>
-    <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
-    <a href="admingame.html"><i class='bx bxs-game'></i> Game Management</a>
-    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
-    <a href="adminuser.html" class="active"><i class='bx bxs-user-account'></i> User Management</a>
+    <a href="admin.html"><i class="bx bxs-dashboard"></i> Dashboard</a>
+    <a href="admingame.html"><i class="bx bxs-game"></i> Game Management</a>
+    <a href="adminorder.html"><i class="bx bxs-shopping-bag-alt"></i> Order Management</a>
+    <a href="adminuser.html" class="active"><i class="bx bxs-user-account"></i> User Management</a>
 
-     <!-- Logout Button -->
     <div class="logout-section">
-      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+      <a href="login.html" class="logout-btn"><i class="bx bx-log-out"></i> Logout</a>
     </div>
   </div>
 
   <div class="main-content">
     <div class="card">
       <h3>User Management</h3>
+      <input type="text" id="searchBar" placeholder="Search by username or name...">
+
       <table>
         <thead>
           <tr>
             <th>Username</th>
+            <th>Name</th>
             <th>Email</th>
             <th>Points</th>
             <th>Role</th>
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>testuser</td>
-            <td>test@gmail.com</td>
-            <td>5</td>
-            <td>user</td>
-            <td>
-              <button class="btn" onclick="openModal('userModal')">Edit</button>
-              <button class="btn">Delete</button>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="usersBody"></tbody>
       </table>
     </div>
   </div>
@@ -55,27 +112,317 @@
   <div id="userModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal('userModal')">&times;</span>
-      <h3>Edit User</h3>
-      <input type="text" placeholder="Username">
-      <input type="email" placeholder="Email">
-      <input type="number" placeholder="Points">
-      <select>
+      <h3>User Profile</h3>
+
+      <input type="hidden" id="editUserId">
+      <label>Username</label>
+      <input type="text" id="editUsername">
+      <label>Email</label>
+      <input type="email" id="editEmail">
+      <label>Phone</label>
+      <input type="text" id="editPhone">
+      <label>Points</label>
+      <input type="number" id="editPoints">
+      <label>Role</label>
+      <select id="editRole">
         <option value="user">User</option>
         <option value="admin">Admin</option>
       </select>
-      <button class="btn">Save</button>
+
+      <button class="btn" id="saveUserBtn">Save Changes</button>
+
+      <h4 style="margin-top:15px;">User Orders</h4>
+      <div class="order-list" id="userOrders"></div>
     </div>
   </div>
 
-  <script>
-    function openModal(id) { document.getElementById(id).style.display = 'block'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    window.onclick = function(event) {
-      document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal) modal.style.display = 'none';
+  <!-- Order Details Modal -->
+  <div id="orderDetailsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('orderDetailsModal')">&times;</span>
+      <h3>Order Details</h3>
+
+      <p><strong>Username:</strong> <span id="modalUsername"></span></p>
+      <p><strong>Name:</strong> <span id="modalName"></span></p>
+      <p><strong>Email:</strong> <span id="modalEmail"></span></p>
+      <p><strong>Phone:</strong> <span id="modalPhone"></span></p>
+
+      <h4 style="margin-top:15px;">Shipping Address</h4>
+      <p><strong>Address:</strong> <span id="modalAddress1"></span></p>
+      <p><strong>Postcode:</strong> <span id="modalPostcode"></span></p>
+      <p><strong>City:</strong> <span id="modalCity"></span></p>
+      <p><strong>Country:</strong> <span id="modalCountry"></span></p>
+
+      <hr />
+
+      <div id="modalItemsContainer">
+        <p><strong>Total Items:</strong> <span id="modalItems"></span></p>
+        <ul id="modalItemList" style="margin-top:5px; padding-left:18px;"></ul>
+      </div>
+
+      <hr />
+
+      <p><strong>Delivery Option:</strong> <span id="modalDelivery"></span></p>
+      <p><strong>Remarks:</strong> <span id="modalRemarks"></span></p>
+      <p><strong>Status:</strong> <span id="modalStatus"></span></p>
+      <p id="modalRejectionReasonContainer" style="display:none;"><strong>Rejection Reason:</strong> <span id="modalRejectionReason"></span></p>
+
+      <div id="modalPaymentImageContainer" style="display:none; margin-top:10px;">
+        <p><strong>Payment Receipt:</strong></p>
+        <button class="view-btn" id="viewReceiptBtn">View Receipt</button>
+      </div>
+
+      <p style="margin-top:15px;"><strong>Total Amount (RM):</strong> <span id="modalTotalAmount"></span></p>
+
+      <div class="action-buttons">
+        <button class="approve-btn" id="approveBtn">Approve</button>
+        <button class="reject-btn" id="rejectBtn">Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Modal -->
+  <div id="receiptModal" class="modal">
+    <div class="modal-content" style="max-width:600px; text-align:center;">
+      <span class="close" id="closeReceiptModal">&times;</span>
+      <h3>Payment Receipt</h3>
+      <img id="receiptImage" src="" alt="Payment Receipt" style="max-width:100%; border-radius:8px; margin-top:10px;">
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      getDoc,
+      updateDoc,
+      increment,
+      query
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const usersBody = document.getElementById("usersBody");
+    const searchBar = document.getElementById("searchBar");
+    let usersCache = [];
+
+    async function loadUsers() {
+      const snapshot = await getDocs(collection(db, "users"));
+      usersCache = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      displayUsers(usersCache);
+    }
+
+    function displayUsers(users) {
+      usersBody.innerHTML = "";
+      if (users.length === 0) {
+        usersBody.innerHTML = "<tr><td colspan='5'>No users found.</td></tr>";
+        return;
+      }
+      users.forEach(user => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+  <td>${user.username || "-"}</td>
+  <td>${user.name || "-"}</td>
+  <td>${user.email || "-"}</td>
+  <td>${user.points || 0}</td>
+  <td>${user.role || "user"}</td>
+  <td><button class="btn" onclick="openUserModal('${user.id}')">View</button></td>
+`;
+
+        usersBody.appendChild(row);
       });
     }
-  </script>
 
+    searchBar.addEventListener("input", () => {
+      const value = searchBar.value.toLowerCase();
+      const filtered = usersCache.filter(
+        user =>
+          user.username?.toLowerCase().includes(value) ||
+          user.name?.toLowerCase().includes(value)
+      );
+      displayUsers(filtered);
+    });
+
+    window.openUserModal = async function(userId) {
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return alert("User not found.");
+
+      const data = userSnap.data();
+      document.getElementById("editUserId").value = userId;
+      document.getElementById("editUsername").value = data.username || "";
+      document.getElementById("editEmail").value = data.email || "";
+      document.getElementById("editPhone").value = data.phone || "";
+      document.getElementById("editPoints").value = data.points || 0;
+      document.getElementById("editRole").value = data.role || "user";
+      document.getElementById("userModal").style.display = "block";
+
+      const ordersContainer = document.getElementById("userOrders");
+      ordersContainer.innerHTML = "<p>Loading orders...</p>";
+
+      const ordersQuery = query(collection(db, "users", userId, "orders"));
+      const ordersSnap = await getDocs(ordersQuery);
+
+      if (ordersSnap.empty) {
+        ordersContainer.innerHTML = "<p>No orders found.</p>";
+        return;
+      }
+
+      ordersContainer.innerHTML = "";
+      ordersSnap.forEach(order => {
+        const o = order.data();
+        const item = document.createElement("div");
+        item.className = "order-item";
+        item.innerHTML = `
+          <strong>${order.id}</strong><br>
+          Status: ${o.status || "Pending"}<br>
+          Total: RM ${(o.total || 0).toFixed(2)}<br>
+          <button class="btn" onclick="viewOrderDetails('${userId}', '${order.id}')">View Order Details</button>
+        `;
+        ordersContainer.appendChild(item);
+      });
+    };
+
+    document.getElementById("saveUserBtn").onclick = async () => {
+      const id = document.getElementById("editUserId").value;
+      const userRef = doc(db, "users", id);
+      await updateDoc(userRef, {
+        username: document.getElementById("editUsername").value,
+        email: document.getElementById("editEmail").value,
+        phone: document.getElementById("editPhone").value,
+        points: parseInt(document.getElementById("editPoints").value) || 0,
+        role: document.getElementById("editRole").value
+      });
+      alert("User updated successfully!");
+      closeModal("userModal");
+      loadUsers();
+    };
+
+    window.closeModal = function(id) {
+      document.getElementById(id).style.display = "none";
+    };
+
+    // Full viewOrderDetails function with approve/reject
+    window.viewOrderDetails = async function(userId, orderId) {
+      try {
+        const orderRef = doc(db, "users", userId, "orders", orderId);
+        const orderSnap = await getDoc(orderRef);
+        if (!orderSnap.exists()) return alert("Order not found.");
+        const data = orderSnap.data();
+
+        const userSnap = await getDoc(doc(db, "users", userId));
+        const userData = userSnap.exists() ? userSnap.data() : {};
+
+        // Populate modal fields
+        document.getElementById("modalUsername").textContent = userData.username || "Unknown";
+        document.getElementById("modalName").textContent = userData.name || "-";
+        document.getElementById("modalEmail").textContent = userData.email || "-";
+        document.getElementById("modalPhone").textContent = userData.phone || "-";
+
+        const address = data.address || {};
+        document.getElementById("modalAddress1").textContent = address.address1 || "-";
+        document.getElementById("modalCity").textContent = address.city || "-";
+        document.getElementById("modalPostcode").textContent = address.postcode || "-";
+        document.getElementById("modalCountry").textContent = address.country || "-";
+
+        document.getElementById("modalItems").textContent = (data.items?.length || 0);
+        const itemList = document.getElementById("modalItemList");
+        itemList.innerHTML = "";
+        if (Array.isArray(data.items)) {
+          data.items.forEach(item => {
+            const li = document.createElement("li");
+            const itemName = item.name || item.title || item.productName || item.gameName || "Unnamed Item";
+            li.textContent = `${item.quantity || 1}× ${itemName} – RM ${(item.price || 0).toFixed(2)}`;
+            itemList.appendChild(li);
+          });
+        }
+
+        document.getElementById("modalDelivery").textContent =
+          `${data.deliveryOption || "-"}${data.deliveryFee ? ` (+RM ${data.deliveryFee.toFixed(2)})` : ""}`;
+        document.getElementById("modalRemarks").textContent = data.remarks || "-";
+        document.getElementById("modalStatus").textContent = data.status || "Pending";
+
+        if (data.rejectionReason) {
+          document.getElementById("modalRejectionReasonContainer").style.display = "block";
+          document.getElementById("modalRejectionReason").textContent = data.rejectionReason;
+        } else {
+          document.getElementById("modalRejectionReasonContainer").style.display = "none";
+        }
+
+        document.getElementById("modalTotalAmount").textContent = (data.total || 0).toFixed(2);
+
+        // Payment receipt
+        const viewReceiptBtn = document.getElementById("viewReceiptBtn");
+        const receiptModal = document.getElementById("receiptModal");
+        const receiptImage = document.getElementById("receiptImage");
+        const closeReceiptModal = document.getElementById("closeReceiptModal");
+
+        if (data.paymentReceiptName) {
+          document.getElementById("modalPaymentImageContainer").style.display = "block";
+          viewReceiptBtn.onclick = () => {
+            receiptImage.src = data.paymentReceiptName;
+            receiptModal.style.display = "block";
+          };
+        } else {
+          document.getElementById("modalPaymentImageContainer").style.display = "none";
+        }
+
+        closeReceiptModal.onclick = () => { receiptModal.style.display = "none"; };
+        window.onclick = (event) => { if (event.target === receiptModal) receiptModal.style.display = "none"; };
+
+        // Show order modal
+        document.getElementById("orderDetailsModal").style.display = "block";
+
+        // Approve button
+        document.getElementById("approveBtn").onclick = async () => {
+          try {
+            await updateDoc(orderRef, { status: "approved" });
+            await updateDoc(doc(db, "users", userId), { points: increment(data.pointsEarned || 10) });
+            alert("Order approved and points added!");
+            closeModal("orderDetailsModal");
+            openUserModal(userId); // refresh orders list
+          } catch (err) {
+            console.error("Approve failed:", err);
+            alert("Failed to approve order. Check console.");
+          }
+        };
+
+        // Reject button
+        document.getElementById("rejectBtn").onclick = async () => {
+          try {
+            const reason = prompt("Enter rejection reason:");
+            if (!reason) return alert("Rejection reason is required.");
+            await updateDoc(orderRef, { status: "rejected", rejectionReason: reason });
+            alert("Order rejected!");
+            closeModal("orderDetailsModal");
+            openUserModal(userId); // refresh orders list
+          } catch (err) {
+            console.error("Reject failed:", err);
+            alert("Failed to reject order. Check console.");
+          }
+        };
+
+      } catch (error) {
+        console.error("Error loading order details:", error);
+        alert("Failed to load order details. Check console.");
+      }
+    };
+
+    loadUsers();
+  </script>
 </body>
 </html>
