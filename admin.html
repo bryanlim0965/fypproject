@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="admin.css">
-  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+  <link rel="stylesheet" href="admin.css"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="dashboard-page">
-
-  <!-- Sidebar -->
   <div class="sidebar">
     <h2>Admin Panel</h2>
     <a href="admin.html" class="active"><i class='bx bxs-dashboard'></i> Dashboard</a>
@@ -17,27 +16,376 @@
     <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
     <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
 
-    <!-- Logout Button -->
     <div class="logout-section">
       <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
     </div>
   </div>
 
-  <!-- Main Content -->
   <div class="main-content">
-    <div class="card">
-      <h3>Analytics / Dashboard</h3>
-      <p>Popular Games: <span id="popular-games">Placeholder</span></p>
-      <p>Sales Statistics: <span id="sales-stats">Placeholder</span></p>
+    <h1>Admin Dashboard</h1>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button onclick="location.href='admingame.html'">Manage Games</button>
+      <button onclick="location.href='adminorder.html'">Manage Orders</button>
+      <button onclick="location.href='landingedit.html'">Edit Landing Page</button>
     </div>
 
-    <div class="card">
-      <h3>Recent Orders</h3>
-      <p>Order #1023 - Pending</p>
-      <p>Order #1022 - Completed</p>
-      <p>Order #1021 - Cancelled</p>
+    <!-- Cards -->
+    <div class="cards">
+      <div class="card"><h3>Total Games</h3><p id="totalGames">0</p></div>
+      <div class="card"><h3>Total Users</h3><p id="totalUsers">0</p></div>
+      <div class="card"><h3>Total Orders</h3><p id="totalOrders">0</p></div>
+      <div class="card"><h3>Pending Orders</h3><p id="pendingOrders">0</p></div>
+      <div class="card"><h3>Low Stock Games</h3><p id="lowStockGames">0</p></div>
+    </div>
+
+    <!-- Sales Statistics -->
+    <div class="section">
+      <div class="card">
+        <div class="flex-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h2>Sales Statistics</h2>
+          <div class="flex-row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <label for="salesFilter">View by:</label>
+            <select id="salesFilter">
+              <option value="daily">Daily</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <div class="date-range" style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+              <label>From:</label>
+              <input type="date" id="startDate"/>
+              <label>To:</label>
+              <input type="date" id="endDate"/>
+              <button id="searchSalesBtn">Search</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <!-- Pie -->
+          <div class="chart-box" id="pieChartBox">
+            <canvas id="revenuePieChart"></canvas>
+            <ul id="revenueLegend"></ul>
+          </div>
+          <!-- Bar (auto hides if no data) -->
+          <div class="chart-box" id="barChartBox" style="display:none;">
+            <canvas id="revenueBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popular Games -->
+    <div class="section popular-games">
+      <h2>Top-Selling Games</h2>
+      <table>
+        <thead><tr><th>Game</th><th>Platform</th><th>Sold</th></tr></thead>
+        <tbody id="popularGamesBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="section recent-orders">
+      <h2>Recent Orders</h2>
+      <table>
+        <thead>
+          <tr><th>Date/Time</th><th>Order ID</th><th>User</th><th>Status</th><th>Total</th></tr>
+        </thead>
+        <tbody id="recentOrdersBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="section low-stock">
+      <h2>Low Stock Alerts</h2>
+      <table>
+        <thead><tr><th>Game</th><th>Platform</th><th>Stock</th></tr></thead>
+        <tbody id="lowStockBody"></tbody>
+      </table>
     </div>
   </div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getFirestore, collection, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let games = [], orders = [];
+    let revenuePieChart, revenueBarChart;
+
+    // ----- helpers -----
+    const toMillis = (ts) => {
+      if (!ts) return 0;
+      if (typeof ts === "number") return ts;
+      if (ts instanceof Date) return ts.getTime();
+      if (typeof ts === "object" && ("seconds" in ts || "nanoseconds" in ts)) {
+        return (ts.seconds || 0) * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+      }
+      const d = new Date(ts);
+      return isNaN(d) ? 0 : d.getTime();
+    };
+    const normalizePlatform = (p) => {
+      const s = String(p || "").toLowerCase();
+      if (!s) return "Other";
+      if (s.includes("ps") || s.includes("playstation")) return "PS";
+      if (s.includes("xbox")) return "Xbox";
+      if (s.includes("nintendo") || s.includes("switch") || s.includes("wii") || s.includes("3ds")) return "Nintendo";
+      return "Other";
+    };
+    const row = (cells) => `<tr>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+    const itemPrice = (it) => Number(it.price ?? it.unitPrice ?? it.priceEach ?? it.amountPerItem ?? it.subtotal ?? 0);
+    const itemQty   = (it) => Number(it.quantity ?? it.qty ?? 1);
+    function platformFromItem(it) {
+      let platform = it.platform || it.gamePlatform || null;
+      if (!platform) {
+        const gid = it.gameId ?? it.productId ?? it.game_id ?? null;
+        if (gid) {
+          const gameById = games.find(g => g.id === gid);
+          platform = gameById?.platform || platform;
+        }
+      }
+      if (!platform) {
+        const nm = (it.name || it.title || it.productName || it.gameName || "").trim().toLowerCase();
+        if (nm) {
+          const gameByName = games.find(g => String(g.name || "").trim().toLowerCase() === nm);
+          platform = gameByName?.platform || platform;
+        }
+      }
+      return normalizePlatform(platform);
+    }
+
+    // ----- data load -----
+    async function loadDashboard() {
+      // games
+      const gamesSnapshot = await getDocs(collection(db, "games"));
+      let lowStockCount = 0;
+      games = [];
+      gamesSnapshot.forEach(doc => {
+        const data = doc.data();
+        games.push({ ...data, id: doc.id });
+        if ((data.stock ?? 0) <= 5) lowStockCount++;
+      });
+      document.getElementById("totalGames").textContent = games.length;
+      document.getElementById("lowStockGames").textContent = lowStockCount;
+
+      // users
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      document.getElementById("totalUsers").textContent = usersSnapshot.size;
+
+      // orders are under users/{uid}/orders
+      const ordersSnapshot = await getDocs(collectionGroup(db, "orders"));
+      orders = [];
+      ordersSnapshot.forEach(doc => orders.push({ ...doc.data(), id: doc.id }));
+      document.getElementById("totalOrders").textContent = orders.length;
+      const pendingCount = orders.filter(o => {
+        const s = String(o.status || "").toLowerCase();
+        return s === "pending" || s === "processing";
+      }).length;
+      document.getElementById("pendingOrders").textContent = pendingCount;
+
+      // popular games
+      const popularGamesBody = document.getElementById("popularGamesBody");
+      popularGamesBody.innerHTML = "";
+      games.slice().sort((a,b)=> (b.sold||0)-(a.sold||0)).slice(0,5)
+        .forEach(g => popularGamesBody.insertAdjacentHTML("beforeend",
+          row([g.name ?? "-", g.platform ?? "", g.sold ?? 0])
+        ));
+
+      // recent orders (show 5 most recent)
+      const recentOrdersBody = document.getElementById("recentOrdersBody");
+      recentOrdersBody.innerHTML = "";
+      orders.slice().sort((a,b)=> toMillis(b.createdAt)-toMillis(a.createdAt)).slice(0,5)
+        .forEach(o => {
+          const total = Number(o.total ?? 0);
+          const when = toMillis(o.createdAt) ? new Date(toMillis(o.createdAt)).toLocaleString() : "-";
+          recentOrdersBody.insertAdjacentHTML("beforeend",
+            row([when, o.id, o.username || "Unknown", o.status || "-", `RM ${total.toFixed(2)}`])
+          );
+        });
+
+      // low stock table
+      const lowStockBody = document.getElementById("lowStockBody");
+      lowStockBody.innerHTML = "";
+      games.filter(g => (g.stock ?? 0) <= 5)
+        .forEach(g => lowStockBody.insertAdjacentHTML("beforeend",
+          row([g.name ?? "-", g.platform ?? "", g.stock ?? 0])
+        ));
+
+      updateRevenuePieChart();
+      updateRevenueBarChart();
+    }
+
+    function computedDefaultRange() {
+      const type = document.getElementById("salesFilter").value;
+      const now = new Date();
+      if (type === "monthly") {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+        return [start, end];
+      }
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59,999);
+      return [start, end];
+    }
+
+    // ----- charts -----
+    function updateRevenuePieChart() {
+      const startInput = document.getElementById("startDate").value;
+      const endInput   = document.getElementById("endDate").value;
+
+      let startDate, endDate;
+      if (startInput || endInput) {
+        const today = new Date();
+        startDate = startInput ? new Date(startInput) : new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        endDate   = endInput   ? new Date(endInput)   : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,999);
+      } else {
+        [startDate, endDate] = computedDefaultRange();
+      }
+
+      const isApproved = (s) => new Set(["approved","completed","paid","delivered","success","successful"]).has(String(s||"").toLowerCase());
+      const approvedOrders = orders.filter(o => isApproved(o.status))
+        .filter(o => { const ms = toMillis(o.createdAt); return ms>=startDate.getTime() && ms<=endDate.getTime(); });
+
+      const totals = { PS:0, Xbox:0, Nintendo:0, Other:0 };
+      for (const o of approvedOrders) {
+        if (Array.isArray(o.items) && o.items.length) {
+          for (const it of o.items) {
+            const amount = (itemPrice(it)||0) * (itemQty(it)||1) || Number(it.total ?? it.lineTotal ?? it.amount ?? 0);
+            totals[platformFromItem(it)] += amount;
+          }
+        } else {
+          const amount = (o.price != null || o.quantity != null)
+            ? Number(o.price ?? 0) * Number(o.quantity ?? 1)
+            : Number(o.total ?? 0);
+          totals[normalizePlatform(o.platform)] += amount;
+        }
+      }
+
+      const ctx = document.getElementById("revenuePieChart").getContext("2d");
+      if (revenuePieChart) revenuePieChart.destroy();
+
+      const labels = ["PS","Xbox","Nintendo","Other"];
+      const data = labels.map(l => Number(totals[l]||0));
+      const allZero = data.reduce((a,b)=>a+b,0) === 0;
+
+      revenuePieChart = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: allZero ? ["No data"] : labels,
+          datasets: [{ data: allZero ? [1] : data,
+                       backgroundColor: allZero ? ["#e0e0e0"] : ["#007bff","#28a745","#ffc107","#6c757d"] }]
+        },
+        options: { responsive: true, aspectRatio: 1, plugins: { legend: { display: false } } }
+      });
+
+      // HTML legend
+      const legendContainer = document.getElementById("revenueLegend");
+      legendContainer.innerHTML = "";
+      revenuePieChart.data.labels.forEach((label, i) => {
+        const color = revenuePieChart.data.datasets[0].backgroundColor[i];
+        const li = document.createElement("li");
+        li.innerHTML = `<span style="background:${color}"></span>${label}`;
+        legendContainer.appendChild(li);
+      });
+    }
+
+    function updateRevenueBarChart() {
+      const type = document.getElementById('salesFilter').value; // daily | monthly
+      const startInput = document.getElementById('startDate').value;
+      const endInput = document.getElementById('endDate').value;
+
+      let startDate, endDate;
+      if (startInput || endInput) {
+        const today = new Date();
+        startDate = startInput ? new Date(startInput) : new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        endDate = endInput ? new Date(endInput) : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+      } else {
+        const now = new Date();
+        if (type === 'monthly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+        } else {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59,999);
+        }
+      }
+
+      const okStatuses = new Set(['approved','completed','paid','delivered','success','successful']);
+      const inRangeApproved = orders.filter(o => okStatuses.has(String(o.status||'').toLowerCase()))
+        .filter(o => { const ms = toMillis(o.createdAt); return ms>=startDate.getTime() && ms<=endDate.getTime(); });
+
+      const buckets = {};
+      const fmtDaily   = (d)=> new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0,10);
+      const fmtMonthly = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const ensure = (k)=> (buckets[k] ??= {PS:0,Xbox:0,Nintendo:0,Other:0});
+
+      for (const o of inRangeApproved) {
+        const d = new Date(toMillis(o.createdAt));
+        const key = (type === 'monthly') ? fmtMonthly(d) : fmtDaily(d);
+        ensure(key);
+        if (Array.isArray(o.items) && o.items.length) {
+          for (const it of o.items) {
+            const amount = (itemPrice(it)||0) * (itemQty(it)||1) || Number(it.total ?? it.lineTotal ?? it.amount ?? 0);
+            buckets[key][platformFromItem(it)] += amount;
+          }
+        } else {
+          const amount = (o.price != null || o.quantity != null)
+            ? Number(o.price ?? 0) * Number(o.quantity ?? 1)
+            : Number(o.total ?? 0);
+          const plat = normalizePlatform(o.platform);
+          buckets[key][plat] += amount;
+        }
+      }
+
+      const keys = Object.keys(buckets).sort();
+      const hasData = keys.length > 0 && keys.some(k => (buckets[k].PS + buckets[k].Xbox + buckets[k].Nintendo + buckets[k].Other) > 0);
+
+      const box = document.getElementById('barChartBox');
+      if (!hasData) { box.style.display = 'none'; if (revenueBarChart) revenueBarChart.destroy(); return; }
+      box.style.display = 'block';
+
+      const ps = keys.map(k=>buckets[k].PS);
+      const xb = keys.map(k=>buckets[k].Xbox);
+      const nt = keys.map(k=>buckets[k].Nintendo);
+      const ot = keys.map(k=>buckets[k].Other);
+
+      const ctx = document.getElementById('revenueBarChart').getContext('2d');
+      if (revenueBarChart) revenueBarChart.destroy();
+
+      revenueBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: keys,
+          datasets: [
+            { label: 'PS', data: ps },
+            { label: 'Xbox', data: xb },
+            { label: 'Nintendo', data: nt },
+            { label: 'Other', data: ot }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+      });
+    }
+
+    // events
+    document.getElementById("searchSalesBtn").addEventListener("click", () => { updateRevenuePieChart(); updateRevenueBarChart(); });
+    document.getElementById("salesFilter").addEventListener("change", () => { updateRevenuePieChart(); updateRevenueBarChart(); });
+
+    loadDashboard();
+  </script>
 </body>
 </html>

@@ -110,3 +110,21 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+import { onSnapshot, collection, query, orderBy } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const q = query(collection(db, "banners"), orderBy("order"));
+onSnapshot(q, (snapshot) => {
+  slidesContainer.innerHTML = "";
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const img = document.createElement("img");
+    img.src = data.imageURL;
+    img.alt = data.alt || "Banner";
+    const slide = document.createElement("div");
+    slide.className = "slide";
+    slide.appendChild(img);
+    slidesContainer.appendChild(slide);
+  });
+});
+

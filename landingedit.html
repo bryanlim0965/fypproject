@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Landing Banner Manager</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0b0d10;
+      color: #fff;
+      padding: 30px;
+    }
+    h1 { text-align: center; margin-bottom: 30px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Upload form */
+    form {
+      background: #111;
+      border: 1px solid #222;
+      padding: 20px 30px;
+      border-radius: 16px;
+    }
+    label { display: block; margin-top: 12px; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    button {
+      margin-top: 18px;
+      background: #e02424;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background .2s ease;
+      width: 100%;
+    }
+    button:hover { background: #ff3b3b; }
+    .preview img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .success {
+      color: #00ff88;
+      font-weight: 600;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* Banner list */
+    .banners {
+      background: #111;
+      border: 1px solid #222;
+      padding: 20px;
+      border-radius: 16px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .banner-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .banner-item img {
+      width: 100px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
+    .banner-info {
+      flex: 1;
+    }
+    .banner-info span {
+      display: block;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+    .delete-btn {
+      background: #ff4b4b;
+      border: none;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .delete-btn:hover { background: #ff6666; }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Landing Banner Manager</h1>
+
+  <div class="grid">
+    <!-- Left: upload -->
+    <form id="bannerForm">
+      <label>Banner Image:</label>
+      <input type="file" id="bannerImage" accept="image/*" required />
+
+      <label>Alt Text:</label>
+      <input type="text" id="altText" placeholder="e.g. Tekken 8 Banner" required />
+
+      <label>Order:</label>
+      <input type="number" id="orderNum" placeholder="1" min="1" required />
+
+      <button type="submit">Upload & Save</button>
+      <div class="preview" id="preview"></div>
+      <div class="success" id="successMsg"></div>
+    </form>
+
+    <!-- Right: banner list -->
+    <div class="banners" id="bannersList">
+      <h3 style="margin-bottom:10px;">Existing Banners</h3>
+      <div id="bannersContainer"></div>
+    </div>
+  </div>
+
+  <!-- Firebase + Cloudinary -->
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { 
+    getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, onSnapshot, updateDoc 
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const CLOUD_NAME = "dqgvby5lb";
+  const UPLOAD_PRESET = "gamebanners";
+
+  const bannerForm = document.getElementById("bannerForm");
+  const bannerImage = document.getElementById("bannerImage");
+  const altText = document.getElementById("altText");
+  const orderNum = document.getElementById("orderNum");
+  const preview = document.getElementById("preview");
+  const successMsg = document.getElementById("successMsg");
+  const bannersContainer = document.getElementById("bannersContainer");
+
+  // Preview selected image
+  bannerImage.addEventListener("change", () => {
+    const file = bannerImage.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.innerHTML = `<img src="${e.target.result}" alt="preview"/>`;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // 🔼 Upload new banner
+  bannerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = bannerImage.files[0];
+    if (!file) return alert("Please select an image.");
+
+    successMsg.textContent = "Uploading to Cloudinary...";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    if (!data.secure_url) {
+      successMsg.textContent = "❌ Upload failed.";
+      return;
+    }
+
+    const ref = doc(db, "banners", `banner${Date.now()}`); // unique ID
+    await setDoc(ref, {
+      imageURL: data.secure_url,
+      alt: altText.value,
+      order: Number(orderNum.value)
+    });
+
+    successMsg.textContent = "✅ Banner uploaded successfully!";
+    bannerForm.reset();
+    preview.innerHTML = "";
+  });
+
+  // 🧩 Drag & Drop Reordering
+  let dragSrcEl = null;
+  function handleDragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.outerHTML);
+    this.classList.add('dragging');
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    this.classList.add('over');
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+  }
+
+  function handleDragLeave() {
+    this.classList.remove('over');
+  }
+
+  function handleDrop(e) {
+    e.stopPropagation();
+    if (dragSrcEl !== this) {
+      this.parentNode.removeChild(dragSrcEl);
+      const dropHTML = e.dataTransfer.getData('text/html');
+      this.insertAdjacentHTML('beforebegin', dropHTML);
+      const dropElem = this.previousSibling;
+      addDnDHandlers(dropElem);
+      saveNewOrder();
+    }
+    this.classList.remove('over');
+    return false;
+  }
+
+  function handleDragEnd() {
+    this.classList.remove('over');
+  }
+
+  function addDnDHandlers(elem) {
+    elem.addEventListener('dragstart', handleDragStart, false);
+    elem.addEventListener('dragover', handleDragOver, false);
+    elem.addEventListener('dragleave', handleDragLeave, false);
+    elem.addEventListener('drop', handleDrop, false);
+    elem.addEventListener('dragend', handleDragEnd, false);
+  }
+
+  // 🧠 Save new order to Firestore
+  async function saveNewOrder() {
+    const banners = document.querySelectorAll(".banner-item");
+    let index = 1;
+    for (const banner of banners) {
+      const id = banner.getAttribute("data-id");
+      await updateDoc(doc(db, "banners", id), { order: index });
+      index++;
+    }
+  }
+
+  // 🔁 Live banner list
+  const q = query(collection(db, "banners"), orderBy("order"));
+  onSnapshot(q, (snapshot) => {
+    bannersContainer.innerHTML = "";
+    snapshot.forEach(docSnap => {
+      const b = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "banner-item";
+      div.setAttribute("draggable", "true");
+      div.setAttribute("data-id", docSnap.id);
+      div.innerHTML = `
+        <img src="${b.imageURL}" alt="${b.alt}">
+        <div class="banner-info">
+          <strong>${b.alt}</strong>
+          <span>Order: ${b.order}</span>
+        </div>
+        <button class="delete-btn" data-id="${docSnap.id}">Delete</button>
+      `;
+      bannersContainer.appendChild(div);
+      addDnDHandlers(div);
+    });
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (confirm("Delete this banner?")) {
+          await deleteDoc(doc(db, "banners", id));
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

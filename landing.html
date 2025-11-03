@@ -75,7 +75,7 @@
       </form>
 
       <div class="actions">
-        <a href="#" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
+        <a href="redeem.html" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
 
         <!-- Login pill -->
         <a href="login.html" id="loginBtn" class="icon-btn" aria-label="Login">
@@ -128,11 +128,11 @@
         <li class="has-sub">
           <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">PS5</a></li>
-            <li><a href="#">PS4</a></li>
-            <li><a href="games.html">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
-          </ul>
+    <li><a href="games.html?platform=PS5">PS5</a></li>
+    <li><a href="games.html?platform=PS4">PS4</a></li>
+    <li><a href="games.html?platform=Xbox">Xbox</a></li>
+    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+  </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
@@ -161,41 +161,57 @@
     </nav>
   </header>
 
-  <!-- Hero Banner / Featured Games -->
   <section class="banner-slider" aria-label="Promotional banners">
-    <div class="viewport">
-      <div class="slides">
-        <div class="slide"><img src="Images/hori.jpg" alt="Promotion Banner 1" /></div>
-        <div class="slide"><img src="Images/hori2.png" alt="Promotion Banner 2" /></div>
-        <div class="slide"><img src="Images/hori.jpg" alt="Promotion Banner 3" /></div>
+  <div class="viewport">
+    <div class="slides" id="bannerSlides"></div>
+  </div>
+  <button class="prev">&#10094;</button>
+  <button class="next">&#10095;</button>
+</section>
+
+  <div class="banner-dots" id="bannerDots"></div> 
+
+
+  <section class="info-strip">
+  <div class="container">
+    <div class="info-col">
+      <h3>CHECK US OUT</h3>
+      <ul class="link-list">
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+      </ul>
+    </div>
+
+    <div class="info-col">
+      <h3>SOCIAL MEDIA</h3>
+      <div class="social-icons">
+        <a href="https://instagram.com/" target="_blank"><i class='bx bxl-instagram'></i></a>
+        <a href="https://facebook.com/" target="_blank"><i class='bx bxl-facebook'></i></a>
       </div>
     </div>
-    <button class="prev">&#10094;</button>
-    <button class="next">&#10095;</button>
-  </section>
 
-  <div class="wrapper">
-    <section class="featured">
-      <h2>Featured Games</h2>
-      <div class="game-cards">
-        <div class="card">
-          <img src="Images/vert.jpg" alt="Featured game cover 1" />
-          <h3>Cyber Adventure</h3>
-          <p>PC | $59.99</p>
+    <div class="info-col">
+      <h3>STORE LOCATION</h3>
+      <a class="store-card" href="https://maps.google.com/?q=Impulse+Gaming" target="_blank">
+        <img src="Images/store.jpg" alt="Storefront photo" />
+        <div class="store-meta">
+          <div class="store-title">RavStore (PENANG)</div>
+          <div class="store-actions">
+            <a class="call" href="tel:+60164469222"><i class='bx bx-phone'></i> +6014-446 9222</a>
+            <span class="pin"><i class='bx bx-map-pin'></i></span>
+          </div>
         </div>
-        <div class="card">
-          <img src="Images/vert.jpg" alt="Featured game cover 2" />
-          <h3>Battle Quest</h3>
-          <p>PS5 | $69.99</p>
-        </div>
-        <div class="card">
-          <img src="Images/vert.jpg" alt="Featured game cover 3" />
-          <h3>Speed Racer</h3>
-          <p>Xbox | $49.99</p>
-        </div>
-      </div>
-    </section>
+      </a>
+    </div>
   </div>
+</section>
+
+<footer class="mini-foot">
+  Copyright © 2025 RavStore. All rights reserved.
+</footer>
+
+
 
   <!-- Firebase + user points logic -->
   <script type="module">
@@ -326,68 +342,23 @@ if (logoutBtn){
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Same Firebase config (you can reuse your existing one)
+  // Same Firebase config ...
   const firebaseConfig = {
     apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
-    authDomain: "final-year-b1cc2.firebaseapp.com",
-    projectId: "final-year-b1cc2",
-    storageBucket: "final-year-b1cc2.firebasestorage.app",
-    messagingSenderId: "537245015385",
-    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
-    measurementId: "G-V6SWSF6F2D"
+    ...
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
   // Get game ID from URL
-  const params = new URLSearchParams(window.location.search);
-  const gameId = params.get("id");
-
-  // Target elements
-  const gameCover = document.querySelector(".game-cover img");
-  const gameTitle = document.querySelector(".game-info h2");
-  const gamePrice = document.querySelector(".game-info .price");
-  const gameDesc  = document.querySelector(".game-info .desc");
-
+  ...
   async function loadGameDetails() {
-    if (!gameId) {
-      gameTitle.textContent = "Game not found";
-      gameDesc.textContent = "No game ID was provided in the URL.";
-      return;
-    }
-
-    try {
-      const docRef = doc(db, "games", gameId);
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-        console.log("Loaded game:", data);
-
-        const title = data.title || data.name || "Untitled Game";
-        const price = data.price || 0;
-        const image = data.image || data.imageURL || "https://via.placeholder.com/400x500?text=No+Image";
-        const desc  = data.description || data.desc || "No description available.";
-
-        gameTitle.textContent = title;
-        gamePrice.textContent = `RM ${price.toLocaleString()}`;
-        gameDesc.textContent  = desc;
-        gameCover.src = image;
-        gameCover.alt = title;
-      } else {
-        gameTitle.textContent = "Game not found";
-        gameDesc.textContent = "This game may have been removed or does not exist.";
-      }
-    } catch (err) {
-      console.error("Error loading game:", err);
-      gameTitle.textContent = "Error loading game";
-      gameDesc.textContent = "An unexpected error occurred.";
-    }
+    ...
   }
-
   loadGameDetails();
 </script>
+
 
 <!-- 🛒 Add to Cart Functionality -->
 <script type="module">
@@ -537,5 +508,123 @@ if (logoutBtn){
 </script>
 
 <script src="landing.js?v=10"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } 
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // ✅ Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const slidesContainer = document.getElementById("bannerSlides");
+  const prevBtn = document.querySelector(".banner-slider .prev");
+  const nextBtn = document.querySelector(".banner-slider .next");
+  const dotsContainer = document.getElementById("bannerDots");
+
+  let currentIndex = 0;
+  let totalSlides = 0;
+  let autoSlideInterval;
+
+  async function loadBanners() {
+    const q = query(collection(db, "banners"), orderBy("order"));
+    const snapshot = await getDocs(q);
+
+    slidesContainer.innerHTML = "";
+    dotsContainer.innerHTML = "";
+
+    snapshot.forEach((doc, i) => {
+      const data = doc.data();
+
+      // Create slide
+      const slide = document.createElement("div");
+      slide.classList.add("slide");
+      slide.innerHTML = `<img src="${data.imageURL}" alt="${data.alt || "Banner"}" />`;
+      slidesContainer.appendChild(slide);
+
+      // Create dot
+      const dot = document.createElement("div");
+      dot.classList.add("dot");
+      dot.dataset.index = i;
+      dotsContainer.appendChild(dot);
+    });
+
+    totalSlides = snapshot.size;
+    currentIndex = 0;
+    updateSlidePosition();
+    updateDots();
+    startAutoSlide();
+
+    // Dot click handler
+    dotsContainer.querySelectorAll(".dot").forEach(dot => {
+      dot.addEventListener("click", () => {
+        currentIndex = parseInt(dot.dataset.index);
+        updateSlidePosition();
+        updateDots();
+        resetAutoSlide();
+      });
+    });
+  }
+
+  // 🔁 Move slide
+  function updateSlidePosition() {
+    slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+    slidesContainer.style.transition = "transform 0.5s ease";
+    updateDots();
+  }
+
+  function updateDots() {
+    document.querySelectorAll(".dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === currentIndex);
+    });
+  }
+
+  function showPrev() {
+    if (totalSlides <= 1) return;
+    currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+    updateSlidePosition();
+    resetAutoSlide();
+  }
+
+  function showNext() {
+    if (totalSlides <= 1) return;
+    currentIndex = (currentIndex + 1) % totalSlides;
+    updateSlidePosition();
+    resetAutoSlide();
+  }
+
+  prevBtn.addEventListener("click", showPrev);
+  nextBtn.addEventListener("click", showNext);
+
+  // 🕓 Auto-slide logic
+  function startAutoSlide() {
+    stopAutoSlide();
+    autoSlideInterval = setInterval(showNext, 5000);
+  }
+
+  function stopAutoSlide() {
+    if (autoSlideInterval) clearInterval(autoSlideInterval);
+  }
+
+  function resetAutoSlide() {
+    stopAutoSlide();
+    startAutoSlide();
+  }
+
+  loadBanners();
+</script>
+
+
+
 </body>
 </html>

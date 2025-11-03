@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bulk Upload Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body{font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b0d10;color:#fff;padding:28px}
+    .card{max-width:900px;margin:0 auto;background:#111;border:1px solid #222;border-radius:14px;padding:22px}
+    h1{margin:0 0 8px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    input[type="file"]{background:#1a1a1a;border:1px solid #333;color:#eaeaea;border-radius:10px;padding:10px}
+    button{background:#e02424;border:none;color:#fff;font-weight:700;border-radius:999px;padding:12px 18px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.95rem}
+    th,td{border:1px solid #222;padding:10px;text-align:left}
+    th{background:#151515}
+    .ok{color:#00e49b;font-weight:700}
+    .err{color:#ff7b7b}
+    .muted{color:#bdbdbd}
+    .mini{font-size:.85rem}
+    .pill{display:inline-block;background:#1a1a1a;border:1px solid #333;border-radius:999px;padding:4px 10px;margin-left:8px}
+    .mt{margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Bulk Upload — Games
+      <span class="pill mini">collection: <strong>games</strong></span>
+    </h1>
+    <p class="muted mini">JSON format per row: <code>{ "name": "Halo Infinite", "description": "...", "platform": "Xbox", "price": 59.99, "stock": 5, "image": "https://..." }</code></p>
+
+    <div class="row">
+      <input id="fileInput" type="file" accept="application/json" />
+      <button id="btnPreview">Preview</button>
+      <button id="btnUpload" disabled>Upload to Firestore</button>
+    </div>
+
+    <div id="status" class="mini muted mt">Choose a JSON file and click Preview.</div>
+    <div id="previewWrap"></div>
+  </div>
+
+  <!-- Firebase (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 🔧 Your config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+      measurementId: "G-V6SWSF6F2D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ——— helpers ———
+    const $ = (s)=>document.querySelector(s);
+    const fileInput = $("#fileInput");
+    const btnPreview = $("#btnPreview");
+    const btnUpload = $("#btnUpload");
+    const statusEl = $("#status");
+    const previewWrap = $("#previewWrap");
+
+    function slugify(str=""){
+      return String(str).toLowerCase()
+        .normalize('NFKD').replace(/[^\w\s-]/g,'')
+        .trim().replace(/\s+/g,'-').replace(/-+/g,'-')
+        .slice(0,64);
+    }
+
+    function toNumber(n){
+      if(n===null || n===undefined || n==="") return null;
+      const x = Number(n);
+      return Number.isFinite(x) ? x : null;
+    }
+
+    let rows = [];
+
+    btnPreview.addEventListener("click", async ()=>{
+      const file = fileInput.files?.[0];
+      if(!file){ alert("Select a JSON file first."); return; }
+
+      statusEl.textContent = "Reading file…";
+      try{
+        const text = await file.text();
+        const json = JSON.parse(text);
+
+        if(!Array.isArray(json)){ throw new Error("JSON must be an array"); }
+
+        // normalize + validate
+        rows = json.map((r)=>({
+          name: (r.name ?? "").toString().trim(),
+          description: (r.description ?? "").toString().trim(),
+          platform: (r.platform ?? "").toString().trim(),
+          price: toNumber(r.price),
+          stock: toNumber(r.stock),
+          image: (r.image ?? "").toString().trim()
+        }));
+
+        // basic validation
+        const problems = [];
+        rows.forEach((r,i)=>{
+          if(!r.name) problems.push(`Row ${i+1}: missing name`);
+          if(r.price===null) problems.push(`Row ${i+1}: invalid price`);
+          if(r.stock===null) problems.push(`Row ${i+1}: invalid stock`);
+        });
+
+        // preview table
+        let html = `<table><thead>
+          <tr><th>#</th><th>Name</th><th>Platform</th><th>Price</th><th>Stock</th><th>Image</th></tr>
+        </thead><tbody>`;
+        rows.forEach((r,i)=>{
+          html += `<tr>
+            <td>${i+1}</td>
+            <td>${r.name}</td>
+            <td>${r.platform||"-"}</td>
+            <td>${r.price}</td>
+            <td>${r.stock}</td>
+            <td>${r.image ? "✅" : "<span class='muted'>—</span>"}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        previewWrap.innerHTML = html;
+
+        if(problems.length){
+          statusEl.innerHTML = `<span class="err">Found ${problems.length} issue(s):</span><br>${problems.slice(0,5).join("<br>")}${problems.length>5?"<br>…":""}`;
+          btnUpload.disabled = true;
+        }else{
+          statusEl.innerHTML = `<span class="ok">Looks good.</span> Ready to upload <strong>${rows.length}</strong> game(s).`;
+          btnUpload.disabled = false;
+        }
+      }catch(err){
+        console.error(err);
+        statusEl.innerHTML = `<span class="err">Failed to parse JSON: ${err.message}</span>`;
+        btnUpload.disabled = true;
+      }
+    });
+
+    btnUpload.addEventListener("click", async ()=>{
+      if(!rows.length){ alert("No rows to upload."); return; }
+      btnUpload.disabled = true;
+      btnPreview.disabled = true;
+      statusEl.textContent = "Uploading…";
+
+      // chunk into safe batch sizes
+      const chunkSize = 400; // keep below limit 500
+      const chunks = [];
+      for(let i=0;i<rows.length;i+=chunkSize) chunks.push(rows.slice(i,i+chunkSize));
+
+      let uploaded = 0;
+      try{
+        for(const chunk of chunks){
+          const batch = writeBatch(db);
+          for(const r of chunk){
+            const id = slugify(r.name) || crypto.randomUUID();
+            const ref = doc(db, "games", id);
+            // upsert fields (add more if needed)
+            batch.set(ref, {
+              name: r.name,
+              description: r.description,
+              platform: r.platform,
+              price: r.price,
+              stock: r.stock,
+              image: r.image,
+              updatedAt: new Date()
+            }, { merge: true });
+          }
+          await batch.commit();
+          uploaded += chunk.length;
+          statusEl.innerHTML = `Uploaded ${uploaded}/${rows.length}…`;
+        }
+        statusEl.innerHTML = `<span class="ok">✅ Done!</span> Uploaded <strong>${uploaded}</strong> game(s).`;
+      }catch(err){
+        console.error(err);
+        statusEl.innerHTML = `<span class="err">Upload failed:</span> ${err.message}`;
+      }finally{
+        btnPreview.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

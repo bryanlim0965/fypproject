@@ -13,6 +13,87 @@
     <link rel="stylesheet" href="landing.css" />
 
     <style>
+      /* Grid */
+.games-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+  gap:24px;
+  align-items:stretch;
+}
+
+/* Card shell (fixed overall height for consistency) */
+.game-card{
+  display:flex;
+  flex-direction:column;
+  background:#1a1a1a;
+  border:1px solid #262626;
+  border-radius:16px;
+  overflow:hidden;
+  height: 380px;              /* <- constant total height */
+  box-shadow:0 4px 15px rgba(0,0,0,.2);
+  transition:transform .2s ease;
+  cursor:pointer;
+}
+.game-card:hover{ transform:scale(1.03); }
+
+/* Image: fixed aspect, always same visual height */
+.game-thumb{
+  width:100%;
+  aspect-ratio: 3 / 4;        /* consistent poster shape */
+  object-fit:cover;
+  display:block;
+}
+
+/* Content area */
+.game-body{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:12px;
+  flex:1;                     /* take remaining space so actions stay at bottom */
+}
+
+/* Title: clamp to 2 lines so all cards align */
+.game-title{
+  color:#fff;
+  font-size:1rem;
+  font-weight:700;
+  line-height:1.25;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  min-height:2.6em;           /* reserves space for two lines */
+}
+
+/* Price sticks near bottom of body */
+.game-price{
+  color:#ccc;
+  font-size:.9rem;
+  margin-top:auto;            /* pushes price to the bottom of body */
+}
+
+/* Buttons sit in a fixed footer row */
+.game-actions{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  padding:12px;
+  border-top:1px solid #262626;
+}
+
+.btn{
+  background:#333;
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+}
+.btn-primary{ background:#ff4757; }
+.btn:hover{ filter:brightness(1.1); }
+
       /* === User menu (account card) === */
       .user-menu{ position:relative; display:none; }
       .user-btn{
@@ -120,20 +201,21 @@
           <li class="has-sub">
             <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
             <ul class="submenu">
-              <li><a href="#">PS</a></li>
-              <li><a href="#">Xbox</a></li>
-              <li><a href="#">Nintendo</a></li>
+              <li><a href="consoles.html?platform=PS">PS</a></li>
+    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
             </ul>
           </li>
           <li class="has-sub">
-            <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
-            <ul class="submenu">
-              <li><a href="#">PS5</a></li>
-              <li><a href="#">PS4</a></li>
-              <li><a href="games.html">Xbox</a></li>
-              <li><a href="#">Nintendo</a></li>
-            </ul>
-          </li>
+  <button class="nav-link">GAMES <i class='bx bx-chevron-down'></i></button>
+  <ul class="submenu">
+    <li><a href="games.html?platform=PS5">PS5</a></li>
+    <li><a href="games.html?platform=PS4">PS4</a></li>
+    <li><a href="games.html?platform=Xbox">Xbox</a></li>
+    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+  </ul>
+</li>
+
           <li class="has-sub">
             <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
             <ul class="submenu">
@@ -167,9 +249,8 @@
       Available Games
     </h2>
 
-    <div id="gamesContainer" 
-        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
-                gap: 24px; justify-content: center; align-items: start;">
+    <div id="gamesContainer" class="games-grid"></div>
+
       <!-- Games will load here -->
     </div>
   </section>
@@ -177,92 +258,112 @@
   <!-- === Game Listing Logic === -->
   <!-- === Game Listing Logic (Fixed for undefined titles) === -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
-      authDomain: "final-year-b1cc2.firebaseapp.com",
-      projectId: "final-year-b1cc2",
-      storageBucket: "final-year-b1cc2.firebasestorage.app",
-      messagingSenderId: "537245015385",
-      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
-      measurementId: "G-V6SWSF6F2D"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const container = document.getElementById("gamesContainer");
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    async function loadGames() {
-      try {
-        const snapshot = await getDocs(collection(db, "games"));
-        container.innerHTML = "";
+  const container = document.getElementById("gamesContainer");
+  const headingEl = document.getElementById("gamesHeading");
 
-        if (snapshot.empty) {
-          container.innerHTML = `<p style="color:#ccc; text-align:center;">No games found.</p>`;
-          return;
-        }
+  // Read ?platform= from URL
+  const params = new URLSearchParams(window.location.search);
+  const rawPlatform = params.get("platform");               // e.g. "Xbox"
+  // Optional: normalize some common aliases
+  const aliases = {
+    "xbox series x": "Xbox",
+    "xbox series s": "Xbox",
+    "nintendo": "Nintendo Switch",
+    "switch": "Nintendo Switch",
+    "ps": "PS5" // fallback if someone typed ps
+  };
+  const platform = rawPlatform
+    ? (aliases[rawPlatform.toLowerCase()] || rawPlatform)
+    : null;
 
-        snapshot.forEach(doc => {
-    const game = doc.data();
-    console.log("Game doc:", doc.id, game);
+  if (headingEl) {
+    headingEl.textContent = platform ? `Available Games — ${platform}` : "Available Games";
+  }
 
-    const title =
-      game.title ||
-      game.name ||
-      game.gameName ||
-      game.GameName ||
-      game.Title ||
-      "Untitled Game";
+  async function loadGames() {
+    try {
+      container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
 
-    const price = game.price || game.cost || game.amount || 0;
-    const image = game.image || game.imageURL || game.thumbnail || "https://via.placeholder.com/250x300?text=No+Image";
-
-    const card = document.createElement("div");
-    card.classList.add("game-card");
-    card.style.background = "#1a1a1a";
-    card.style.border = "1px solid #262626";
-    card.style.borderRadius = "16px";
-    card.style.padding = "16px";
-    card.style.textAlign = "center";
-    card.style.transition = "transform 0.2s ease";
-    card.style.cursor = "pointer";
-    card.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-
-    card.innerHTML = `
-      <img src="${image}" alt="${title}" 
-          style="width:100%; border-radius:12px; object-fit:cover; margin-bottom:12px;">
-      <h3 style="color:#fff; font-size:1.1rem; font-weight:600;">${title}</h3>
-      <p style="color:#ccc; font-size:0.9rem; margin:6px 0;">RM ${price.toLocaleString()}</p>
-      <button class="add-to-cart" style="margin-top:10px; background:#ff4757; color:#fff; 
-                    border:none; padding:8px 14px; border-radius:8px; 
-                    font-weight:600; cursor:pointer;">
-        Add to Cart
-      </button>
-    `;
-
-    // 🟢 Added: make the card link to game-details.html
-    card.addEventListener("click", (e) => {
-      if (!e.target.classList.contains("add-to-cart")) {
-        window.location.href = `game-details.html?id=${doc.id}`;
+      // Build the query: filter when platform is specified; otherwise get all.
+      let qRef;
+      if (platform) {
+        qRef = query(collection(db, "games"), where("platform", "==", platform));
+      } else {
+        qRef = collection(db, "games");
       }
-    });
 
-    card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
-    card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
+      const snapshot = await getDocs(qRef);
 
-    container.appendChild(card);
-  });
+      container.innerHTML = "";
 
-      } catch (err) {
-        console.error("Error loading games:", err);
-        container.innerHTML = `<p style="color:#f55;">Error loading games.</p>`;
+      if (snapshot.empty) {
+        container.innerHTML = `<p style="color:#ccc; text-align:center;">No games found${platform ? ` for ${platform}` : ""}.</p>`;
+        return;
       }
+
+      snapshot.forEach(docSnap => {
+        const game = docSnap.data();
+
+        const title =
+          game.title || game.name || game.gameName || game.GameName || game.Title || "Untitled Game";
+
+        const price = Number(game.price || game.cost || game.amount || 0);
+        const image = game.image || game.imageURL || game.thumbnail || "https://via.placeholder.com/250x300?text=No+Image";
+
+        const card = document.createElement("div");
+        card.classList.add("game-card");
+        card.classList.add("game-card");
+
+card.innerHTML = `
+  <img class="game-thumb" src="${image}" alt="${title}">
+  <div class="game-body">
+    <h3 class="game-title">${title}</h3>
+    <p class="game-price">RM ${price.toLocaleString()}</p>
+  </div>
+  <div class="game-actions">
+    <button class="btn view-btn">View</button>
+    <button class="btn btn-primary add-to-cart">Add to Cart</button>
+  </div>
+`;
+
+
+        // Navigate to details if View or card (except add-to-cart) is clicked
+        card.addEventListener("click", (e) => {
+          if (!e.target.classList.contains("add-to-cart")) {
+            window.location.href = `game-details.html?id=${docSnap.id}`;
+          }
+        });
+
+        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
+        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
+
+        container.appendChild(card);
+      });
+    } catch (err) {
+      console.error("Error loading games:", err);
+      container.innerHTML = `<p style="color:#f55;text-align:center;">Error loading games.</p>`;
     }
+  }
 
-    loadGames();
-  </script>
+  loadGames();
+</script>
+
 
 
     </div>

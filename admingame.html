@@ -56,24 +56,42 @@
     </section>
 
     <section class="game-list-section">
-      <h2>Existing Games</h2>
-      <table id="gamesTable">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Platform</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Image</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Games will be listed here -->
-        </tbody>
-      </table>
-    </section>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+    <h2 style="margin: 0;">Existing Games</h2>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <input type="text" id="gameSearch" placeholder="Search by name..." style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
+      <select id="platformFilter" style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
+        <option value="">All Platforms</option>
+        <option value="PS">PS</option>
+        <option value="Xbox">Xbox</option>
+        <option value="Nintendo">Nintendo</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="height: 400px; overflow-y: auto;">
+    <table id="gamesTable" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Platform</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Image</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Games will be listed here -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+
+
   </div>
 
   <script type="module">
@@ -105,33 +123,53 @@
     const uploadStatus = document.getElementById("uploadStatus");
     const gamesTableBody = document.querySelector("#gamesTable tbody");
     const clearBtn = document.getElementById("clearForm");
+    const platformFilter = document.getElementById("platformFilter");
+    const gameSearch = document.getElementById("gameSearch");
 
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dqgvby5lb/image/upload";
-    const CLOUDINARY_PRESET = "game_images"; // ⚠️ Replace this with your preset name
+    const CLOUDINARY_PRESET = "game_images";
+
+    let allGames = [];
 
     // Load games
     async function loadGames() {
       gamesTableBody.innerHTML = "";
       const snapshot = await getDocs(gamesRef);
+      allGames = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${data.name}</td>
-          <td>${data.description}</td>
-          <td>${data.platform || ''}</td>
-          <td>RM ${data.price.toFixed(2)}</td>
-          <td>${data.stock}</td>
-          <td>${data.image ? `<img src="${data.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">` : 'No Image'}</td>
-          <td>
-            <button class="edit-btn" data-id="${docSnap.id}">Edit</button>
-            <button class="delete-btn" data-id="${docSnap.id}">Delete</button>
-          </td>
-        `;
-        gamesTableBody.appendChild(tr);
+        allGames.push({ id: docSnap.id, ...data });
+      });
+      displayGames();
+    }
+
+    function displayGames() {
+      const searchTerm = gameSearch.value.toLowerCase();
+      const platformTerm = platformFilter.value;
+
+      gamesTableBody.innerHTML = "";
+      allGames.forEach(data => {
+        if (
+          (platformTerm === "" || data.platform === platformTerm) &&
+          (data.name.toLowerCase().includes(searchTerm))
+        ) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.name}</td>
+            <td>${data.description}</td>
+            <td>${data.platform || ''}</td>
+            <td>RM ${data.price.toFixed(2)}</td>
+            <td>${data.stock}</td>
+            <td>${data.image ? `<img src="${data.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">` : 'No Image'}</td>
+            <td>
+              <button class="edit-btn" data-id="${data.id}">Edit</button>
+              <button class="delete-btn" data-id="${data.id}">Delete</button>
+            </td>
+          `;
+          gamesTableBody.appendChild(tr);
+        }
       });
     }
-    loadGames();
 
     // Add or update game
     gameForm.addEventListener("submit", async (e) => {
@@ -145,14 +183,12 @@
         stock: parseInt(stockInput.value),
       };
 
-      // Handle image upload
       if (imageInput.files.length > 0) {
         const file = imageInput.files[0];
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", CLOUDINARY_PRESET);
         uploadStatus.textContent = "Uploading image...";
-
         try {
           const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
           const data = await res.json();
@@ -192,7 +228,6 @@
     gamesTableBody.addEventListener("click", async (e) => {
       const docId = e.target.dataset.id;
       if (!docId) return;
-
       if (e.target.classList.contains("edit-btn")) {
         const docSnap = await getDoc(doc(db, "games", docId));
         if (docSnap.exists()) {
@@ -212,6 +247,11 @@
         }
       }
     });
+
+    platformFilter.addEventListener("change", displayGames);
+    gameSearch.addEventListener("input", displayGames);
+
+    loadGames();
   </script>
 </body>
 </html>
