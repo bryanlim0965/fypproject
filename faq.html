@@ -182,7 +182,6 @@
                 <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
                 <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
                 <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
-
                 <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
               </div>
 
@@ -244,141 +243,71 @@
       </nav>
     </header>
 
-    <!-- === Game Listing Section === -->
-  <section class="games-section" style="padding: 40px;">
-    <h2 style="font-size: 2rem; font-weight: 700; color: #ff4757; text-align: center; margin-bottom: 10px;" id="gamesHeading">
-  Available Games
-</h2>
-<p id="gamesSubtitle" style="color:#bbb; text-align:center; margin-bottom:30px;"></p>
+   <main>
+    <main>
+  <section class="faq-section" style="padding: 40px 20px; max-width: 900px; margin: 0 auto; color: #fff; font-family: 'Poppins', sans-serif;">
+    <h1 style="text-align: center; font-size: 2rem; margin-bottom: 30px; font-weight: 700;">Frequently Asked Questions</h1>
 
-<div id="gamesContainer" class="games-grid"></div>
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">1. Are the games physical copies or digital downloads?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">We offer both physical copies and digital downloads.</p>
+    </div>
 
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">2. Do you sell pre-owned or refurbished games?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">Yes! We sell both new and pre-owned games. Trade-ins are also welcome.</p>
+    </div>
 
-      <!-- Games will load here -->
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">3. Can I request a game that’s not listed in your store?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">Our latest games are updated on the store as soon as they arrive. If a title isn’t listed yet, it means it hasn’t arrived or isn’t available at the moment.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">4. Can I cancel or modify my order after placing it?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">Yes, you can. Just submit a support ticket, and our admin team will assist you.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">5. How do I know if my order was successful?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">Keep an eye on your order status — once it changes from <em>Pending</em> to <em>Accepted</em>, your order has been successfully processed.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">6. How long does delivery take?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">Delivery usually takes 1–3 working days.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">7. How can I exchange my game for another one?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">You can exchange your game as long as it’s still new and sealed. Exchanges are allowed for items of equal or higher value — you’ll just need to pay the difference if applicable.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">8. How do I earn reward points?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">You can earn points by successfully checking out your purchases or by playing our daily mini-games.</p>
+    </div>
+
+    <div class="faq-item" style="margin-bottom: 20px;">
+      <h3 style="cursor: pointer; background: #222; padding: 15px 20px; border-radius: 10px; font-size: 1.1rem;">9. How can I redeem my points?</h3>
+      <p style="display: none; padding: 15px 20px; background: #1a1a1a; border-radius: 10px; margin-top: 5px;">You can redeem your points on our <strong>Redeem</strong> page, where you’ll find a variety of items available for redemption.</p>
     </div>
   </section>
 
-  <!-- === Game Listing Logic === -->
-  <!-- === Game Listing Logic (Fixed for undefined titles) === -->
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
-    authDomain: "final-year-b1cc2.firebaseapp.com",
-    projectId: "final-year-b1cc2",
-    storageBucket: "final-year-b1cc2.firebasestorage.app",
-    messagingSenderId: "537245015385",
-    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
-    measurementId: "G-V6SWSF6F2D"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const container = document.getElementById("gamesContainer");
-  const headingEl = document.getElementById("gamesHeading");
-  const subtitleEl = document.getElementById("gamesSubtitle");
-
-
-  // Read ?platform= from URL
-  const params = new URLSearchParams(window.location.search);
-  const rawPlatform = params.get("platform");               // e.g. "Xbox"
-  // Optional: normalize some common aliases
-  const aliases = {
-    "xbox series x": "Xbox",
-    "xbox series s": "Xbox",
-    "nintendo": "Nintendo Switch",
-    "switch": "Nintendo Switch",
-    "ps": "PS5" // fallback if someone typed ps
-  };
-  const platform = rawPlatform
-    ? (aliases[rawPlatform.toLowerCase()] || rawPlatform)
-    : null;
-
-    const categoryParam = new URLSearchParams(window.location.search).get("category");
-let collectionName = "games";
-if (categoryParam === "consoles") collectionName = "consoles";
-else if (categoryParam === "peripherals") collectionName = "peripherals";
-else if (categoryParam === "toys") collectionName = "toys";
-else if (categoryParam === "lifestyle") collectionName = "lifestyle";
-
-  if (headingEl) {
-    headingEl.textContent = platform ? `Available Games — ${platform}` : "Available Games";
-  }
-
-  async function loadGames() {
-    try {
-      container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
-
-      // Build the query: filter when platform is specified; otherwise get all.
-      let qRef;
-      if (platform) {
-        qRef = query(collection(db, "games"), where("platform", "==", platform));
-      } else {
-        qRef = collection(db, "games");
-      }
-
-      const snapshot = await getDocs(qRef);
-
-      container.innerHTML = "";
-
-      if (snapshot.empty) {
-        container.innerHTML = `<p style="color:#ccc; text-align:center;">No games found${platform ? ` for ${platform}` : ""}.</p>`;
-        return;
-      }
-
-      snapshot.forEach(docSnap => {
-        const game = docSnap.data();
-
-        const title =
-          game.title || game.name || game.gameName || game.GameName || game.Title || "Untitled Game";
-
-        const price = Number(game.price || game.cost || game.amount || 0);
-        const image = game.image || game.imageURL || game.thumbnail || "https://via.placeholder.com/250x300?text=No+Image";
-
-        const card = document.createElement("div");
-        card.classList.add("game-card");
-        card.classList.add("game-card");
-
-card.innerHTML = `
-  <img class="game-thumb" src="${image}" alt="${title}">
-  <div class="game-body">
-    <h3 class="game-title">${title}</h3>
-    <p class="game-price">RM ${price.toLocaleString()}</p>
-  </div>
-  <div class="game-actions">
-    <button class="btn view-btn">View</button>
-    <button class="btn btn-primary add-to-cart">Add to Cart</button>
-  </div>
-`;
-
-
-        // Navigate to details if View or card (except add-to-cart) is clicked
-        card.addEventListener("click", (e) => {
-          if (!e.target.classList.contains("add-to-cart")) {
-            window.location.href = `game-details.html?id=${docSnap.id}`;
-          }
-        });
-
-        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
-        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-
-        container.appendChild(card);
+  <script>
+    // Simple accordion toggle for FAQ
+    document.querySelectorAll('.faq-item h3').forEach(header => {
+      header.addEventListener('click', () => {
+        const paragraph = header.nextElementSibling;
+        const isOpen = paragraph.style.display === 'block';
+        document.querySelectorAll('.faq-item p').forEach(p => p.style.display = 'none');
+        paragraph.style.display = isOpen ? 'none' : 'block';
       });
-    } catch (err) {
-      console.error("Error loading games:", err);
-      container.innerHTML = `<p style="color:#f55;text-align:center;">Error loading games.</p>`;
-    }
-  }
+    });
+  </script>
+</main>
 
-  loadGames();
-</script>
-
-
-
-    </div>
+   </main>
 
     <!-- Firebase + user points logic -->
     <script type="module">

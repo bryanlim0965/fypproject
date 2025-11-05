@@ -1,9 +1,630 @@
- input, select, textarea {
-    width: 100%;
-    padding: 0.8rem;
-    margin-top: 0.4rem;
-    border-radius: 10px;
-    border: 1px solid #222;
-    background: rgba(255, 255, 255, 0.856);
-    color: #fff;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Store</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="landing.css" />
+
+  <style>
+    /* === User menu (account card) === */
+    .user-menu{ position:relative; display:none; }
+    .user-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:999px;
+      background:#1a1a1a; border:1px solid #262626; color:#e8e8e8;
+      font-size:1.4rem; cursor:pointer; transition:background .15s ease, color .15s ease;
+    }
+    .user-btn:hover{ background:#222; }
+    .user-btn.logged-in { color: #00ff00; } /* green after login */
+
+    .user-card{
+      position:absolute; top:calc(100% + 10px); right:0; min-width:280px;
+      background:#111; border:1px solid #222; border-radius:16px;
+      box-shadow:0 18px 40px rgba(0,0,0,.5); padding:12px; display:none; z-index:4000;
+    }
+    .user-menu.open .user-card{ display:block; }
+
+    .uc-header{
+      display:flex; align-items:center; gap:12px;
+      padding:12px; border-radius:12px; background:#151515; border:1px solid #222;
+      margin-bottom:10px;
+    }
+    .uc-avatar{
+      width:42px; height:42px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:#28a745; color:#fff; font-weight:800;
+      transition: background .15s ease, color .15s ease;
+    }
+    .uc-avatar.logged-in { background: #00ff00; color:#111; } /* green avatar */
+    
+    .uc-ident{ line-height:1.2; }
+    .uc-name{ font-weight:800; color:#fff; }
+    .uc-points{ font-size:.85rem; color:#bdbdbd; }
+    .uc-items{ padding:6px 0; }
+    .uc-item{
+      width:100%; display:flex; align-items:center; gap:10px;
+      padding:10px 12px; color:#eaeaea; background:transparent; border:none;
+      text-decoration:none; border-radius:10px; cursor:pointer; font-weight:700;
+      transition:background .15s ease, color .15s ease, transform .05s ease;
+    }
+    .uc-item i{ font-size:1.1rem; }
+    .uc-item:hover{ background:#1b1b1d; color:#fff; }
+    .uc-logout{
+      width:100%; text-align:left; margin-top:6px; color:#ff8080;
+    }
+    .uc-logout:hover{ background:#1b1b1d; color:#ffb3b3; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Top Header / Nav ===== -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <a href="landing.html" class="brand"><img src="Images/logo.png" alt="Brand Logo"></a>
+
+      <form class="search" action="#" method="get">
+        <input type="text" name="q" placeholder="Search" aria-label="Search games, consoles, accessories" />
+        <button type="submit" aria-label="Search"><i class='bx bx-search'></i></button>
+      </form>
+
+      <div class="actions">
+        <a href="redeem.html" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
+
+        <!-- Login pill -->
+        <a href="login.html" id="loginBtn" class="icon-btn" aria-label="Login">
+          <i class='bx bx-user'></i><span class="label">Login</span>
+        </a>
+
+        <!-- User icon + dropdown -->
+        <div class="user-menu" id="userMenu">
+          <button class="user-btn" id="userBtn" aria-expanded="false" aria-haspopup="true">
+            <i class='bx bx-user-circle'></i>
+          </button>
+
+          <div class="user-dropdown user-card" id="userDropdown" role="menu">
+            <div class="uc-header">
+              <div class="uc-avatar" id="userAvatar">U</div>
+              <div class="uc-ident">
+                <div class="uc-name" id="userNameLarge">User</div>
+                <div class="uc-points" id="userPoints">0 Points</div>
+              </div>
+            </div>
+
+            <div class="uc-items">
+              <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
+              <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+              <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
+              <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
+            </div>
+
+            <button class="uc-item uc-logout" id="logoutBtn"><i class='bx bx-log-out'></i> Logout</button>
+          </div>
+        </div>
+
+        <a href="cart.html" class="icon-btn cart" aria-label="Cart">
+          <i class='bx bx-cart'></i><span class="count" id="cartCount">0</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Global nav -->
+    <nav class="mainnav" aria-label="Main navigation">
+      <ul>
+        <li><a href="#">HOME</a></li>
+        <li class="has-sub">
+          <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+              <li><a href="consoles.html?platform=PS">PS</a></li>
+    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
+            </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+    <li><a href="games.html?platform=PS5">PS5</a></li>
+    <li><a href="games.html?platform=PS4">PS4</a></li>
+    <li><a href="games.html?platform=Xbox">Xbox</a></li>
+    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+  </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=peripherals&platform=kb">Keyboards</a></li>
+            <li><a href="items.html?category=peripherals&platform=mice">Mice</a></li>
+            <li><a href="items.html?category=peripherals&platform=monitor">Monitors</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=toys&platform=LE">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=figures">Figures</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=lifestyle&platform=apparel">Apparel</a></li>
+            <li><a href="items.html?category=lifestyle&platform=bag">Bags</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="banner-slider" aria-label="Promotional banners">
+  <div class="viewport">
+    <div class="slides" id="bannerSlides"></div>
+  </div>
+  <button class="prev">&#10094;</button>
+  <button class="next">&#10095;</button>
+</section>
+
+  <div class="banner-dots" id="bannerDots"></div> 
+
+
+  <section class="info-strip">
+  <div class="container">
+    <div class="info-col">
+      <h3>CHECK US OUT</h3>
+      <ul class="link-list">
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+      </ul>
+    </div>
+
+    <div class="info-col">
+      <h3>SOCIAL MEDIA</h3>
+      <div class="social-icons">
+        <a href="https://instagram.com/" target="_blank"><i class='bx bxl-instagram'></i></a>
+        <a href="https://facebook.com/" target="_blank"><i class='bx bxl-facebook'></i></a>
+      </div>
+    </div>
+
+    <div class="info-col">
+      <h3>STORE LOCATION</h3>
+      <a class="store-card" href="https://maps.google.com/?q=Impulse+Gaming" target="_blank">
+        <img src="Images/store.jpg" alt="Storefront photo" />
+        <div class="store-meta">
+          <div class="store-title">RavStore (PENANG)</div>
+          <div class="store-actions">
+            <a class="call" href="tel:+60164469222"><i class='bx bx-phone'></i> +6014-446 9222</a>
+            <span class="pin"><i class='bx bx-map-pin'></i></span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="mini-foot">
+  Copyright © 2025 RavStore. All rights reserved.
+</footer>
+
+
+
+  <!-- Firebase + user points logic -->
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+  authDomain: "final-year-b1cc2.firebaseapp.com",
+  projectId: "final-year-b1cc2",
+  storageBucket: "final-year-b1cc2.firebasestorage.app",
+  messagingSenderId: "537245015385",
+  appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+  measurementId: "G-V6SWSF6F2D"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const loginBtn   = document.getElementById("loginBtn");
+const userMenu   = document.getElementById("userMenu");
+const userBtn    = document.getElementById("userBtn");
+const userNameLg = document.getElementById("userNameLarge");
+const userPoints = document.getElementById("userPoints");
+const userAvatar = document.getElementById("userAvatar");
+const logoutBtn  = document.getElementById("logoutBtn");
+
+function initialsFrom(nameOrEmail){
+  const base = (nameOrEmail || "User").trim();
+  const parts = base.includes("@") ? [base.split("@")[0]] : base.split(" ");
+  const letters = parts.filter(Boolean).slice(0,2).map(s => s[0].toUpperCase());
+  return letters.join('') || 'U';
+}
+
+function showLoggedInDisplay(name, points, email){
+  if(loginBtn) loginBtn.style.display = "none";
+  if(userMenu) userMenu.style.display = "inline-flex";
+  if(userNameLg) userNameLg.textContent = name || "User";
+  if(userPoints) userPoints.textContent = `${points || 0} Points`;
+  if(userAvatar){
+    userAvatar.textContent = initialsFrom(email || name);
+    userAvatar.classList.add('logged-in'); // green avatar
   }
+  if(userBtn) userBtn.classList.add('logged-in'); // green button
+}
+
+function showLoggedOutDisplay(){
+  if(loginBtn) loginBtn.style.display = "inline-flex";
+  if(userMenu) userMenu.style.display = "none";
+  if(userAvatar) userAvatar.classList.remove('logged-in');
+  if(userBtn) userBtn.classList.remove('logged-in');
+}
+
+
+// Instant display if stored in localStorage
+let name = localStorage.getItem("name");
+let points = localStorage.getItem("points");
+if (name) showLoggedInDisplay(name, points);
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Create user record if not found
+      await setDoc(userRef, {
+        name: user.displayName || user.email.split("@")[0],
+        email: user.email,
+        phone: "",
+        points: 0
+      });
+    }
+
+    const userData = (await getDoc(userRef)).data();
+
+    // Store in localStorage
+    localStorage.setItem("name", userData.name);
+    localStorage.setItem("points", userData.points);
+
+    // Display user's full name
+    showLoggedInDisplay(userData.name, userData.points);
+  } else {
+    localStorage.removeItem("name");
+    localStorage.removeItem("points");
+    showLoggedOutDisplay();
+  }
+});
+
+
+// Toggle dropdown
+if (userBtn && userMenu){
+  userBtn.addEventListener("click", e=>{
+    e.stopPropagation();
+    const isOpen = userMenu.classList.toggle("open");
+    userBtn.setAttribute("aria-expanded", String(isOpen));
+  });
+  document.addEventListener("click", e=>{
+    if (!userMenu.contains(e.target)){
+      userMenu.classList.remove("open");
+      userBtn.setAttribute("aria-expanded","false");
+    }
+  });
+  document.addEventListener("keydown", e=>{
+    if (e.key === "Escape"){
+      userMenu.classList.remove("open");
+      userBtn.setAttribute("aria-expanded","false");
+    }
+  });
+}
+
+// Logout
+if (logoutBtn){
+  logoutBtn.addEventListener("click", async ()=>{
+    try { await signOut(auth); } catch {}
+    localStorage.removeItem("username");
+    localStorage.removeItem("points");
+    showLoggedOutDisplay();
+    window.location.href = "landing.html";
+  });
+}
+</script>
+
+<!-- 🟢 Load game details dynamically from Firestore -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // Same Firebase config ...
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    ...
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Get game ID from URL
+  ...
+  async function loadGameDetails() {
+    ...
+  }
+  loadGameDetails();
+</script>
+
+
+<!-- 🛒 Add to Cart Functionality -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // Reuse Firebase app already initialized above
+  const auth = getAuth();
+  const db = getFirestore();
+
+  const addToCartBtn = document.querySelector(".add-to-cart");
+  const qtyInput = document.getElementById("qty");
+
+  // Get game info from page
+  const gameTitle = document.querySelector(".game-info h2");
+  const gamePrice = document.querySelector(".game-info .price");
+  const gameCover = document.querySelector(".game-cover img");
+
+  addToCartBtn.addEventListener("click", async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("Please log in to add items to your cart.");
+      window.location.href = "login.html";
+      return;
+    }
+
+    const uid = user.uid;
+    const gameId = new URLSearchParams(window.location.search).get("id");
+    const quantity = parseInt(qtyInput.value) || 1;
+
+    // Prepare cart item data
+    const itemData = {
+      title: gameTitle.textContent,
+      price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
+      image: gameCover.src,
+      quantity: quantity,
+      addedAt: new Date()
+    };
+
+    const cartItemRef = doc(db, "users", uid, "cart", gameId);
+    const existingSnap = await getDoc(cartItemRef);
+
+    try {
+      if (existingSnap.exists()) {
+        // Update quantity if item already exists
+        await updateDoc(cartItemRef, {
+          quantity: increment(quantity)
+        });
+      } else {
+        // Create new cart item
+        await setDoc(cartItemRef, itemData);
+      }
+      alert("✅ Added to cart!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("❌ Failed to add item to cart.");
+    }
+  });
+</script>
+
+<!-- Firebase + user menu + points -->
+<script type="module">
+  // ... your existing Firebase login/logout logic ...
+</script>
+
+<!-- ✅ Add this below -->
+<!-- 🔁 Real-time Cart Count Sync (Keeps last value after logout) -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const auth = getAuth();
+  const db = getFirestore();
+  const cartCountEl = document.getElementById("cartCount");
+
+  function updateCartCount(count) {
+    if (cartCountEl) {
+      cartCountEl.textContent = count;
+    }
+    localStorage.setItem("cartCount", count);
+  }
+
+  const savedCount = localStorage.getItem("cartCount");
+  if (savedCount !== null) {
+    updateCartCount(savedCount);
+  }
+
+  // Auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        showLoggedIn(user.email);
+        renderCart(user.uid);
+        updateCartCount(user.uid);
+
+        // 🟢 Show cart bubble when logged in
+    cartCountEl.style.display = "inline-flex";
+    
+      } else {
+        showLoggedOut();
+        cartContainer.innerHTML = `<p>Please log in to view your cart.</p>`;
+      }
+    });
+</script>
+
+<!-- ✅ Hide cart bubble when logged out / Show when logged in -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const auth = getAuth();
+  const db = getFirestore();
+  const cartCountEl = document.getElementById("cartCount");
+
+  function updateCartCount(count) {
+    if (cartCountEl) {
+      cartCountEl.textContent = count;
+      // hide if zero
+      cartCountEl.style.display = count > 0 ? "inline-flex" : "none";
+    }
+    localStorage.setItem("cartCount", count);
+  }
+
+  // Load saved count from localStorage (for smooth transitions)
+  const savedCount = localStorage.getItem("cartCount");
+  if (savedCount !== null) {
+    updateCartCount(Number(savedCount));
+  }
+
+  // Monitor auth state
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // 🟢 User logged in — listen to Firestore cart
+      const cartRef = collection(db, "users", user.uid, "cart");
+      onSnapshot(cartRef, (snapshot) => {
+        const itemCount = snapshot.docs.reduce((sum, doc) => sum + (doc.data().quantity || 0), 0);
+        updateCartCount(itemCount);
+      });
+    } else {
+      // 🔴 Logged out — hide bubble + clear local storage
+      localStorage.removeItem("cartCount");
+      if (cartCountEl) {
+        cartCountEl.style.display = "none";
+      }
+    }
+  });
+</script>
+
+<script src="landing.js?v=10"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } 
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // ✅ Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const slidesContainer = document.getElementById("bannerSlides");
+  const prevBtn = document.querySelector(".banner-slider .prev");
+  const nextBtn = document.querySelector(".banner-slider .next");
+  const dotsContainer = document.getElementById("bannerDots");
+
+  let currentIndex = 0;
+  let totalSlides = 0;
+  let autoSlideInterval;
+
+  async function loadBanners() {
+    const q = query(collection(db, "banners"), orderBy("order"));
+    const snapshot = await getDocs(q);
+
+    slidesContainer.innerHTML = "";
+    dotsContainer.innerHTML = "";
+
+    snapshot.forEach((doc, i) => {
+      const data = doc.data();
+
+      // Create slide
+      const slide = document.createElement("div");
+      slide.classList.add("slide");
+      slide.innerHTML = `<img src="${data.imageURL}" alt="${data.alt || "Banner"}" />`;
+      slidesContainer.appendChild(slide);
+
+      // Create dot
+      const dot = document.createElement("div");
+      dot.classList.add("dot");
+      dot.dataset.index = i;
+      dotsContainer.appendChild(dot);
+    });
+
+    totalSlides = snapshot.size;
+    currentIndex = 0;
+    updateSlidePosition();
+    updateDots();
+    startAutoSlide();
+
+    // Dot click handler
+    dotsContainer.querySelectorAll(".dot").forEach(dot => {
+      dot.addEventListener("click", () => {
+        currentIndex = parseInt(dot.dataset.index);
+        updateSlidePosition();
+        updateDots();
+        resetAutoSlide();
+      });
+    });
+  }
+
+  // 🔁 Move slide
+  function updateSlidePosition() {
+    slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+    slidesContainer.style.transition = "transform 0.5s ease";
+    updateDots();
+  }
+
+  function updateDots() {
+    document.querySelectorAll(".dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === currentIndex);
+    });
+  }
+
+  function showPrev() {
+    if (totalSlides <= 1) return;
+    currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+    updateSlidePosition();
+    resetAutoSlide();
+  }
+
+  function showNext() {
+    if (totalSlides <= 1) return;
+    currentIndex = (currentIndex + 1) % totalSlides;
+    updateSlidePosition();
+    resetAutoSlide();
+  }
+
+  prevBtn.addEventListener("click", showPrev);
+  nextBtn.addEventListener("click", showNext);
+
+  // 🕓 Auto-slide logic
+  function startAutoSlide() {
+    stopAutoSlide();
+    autoSlideInterval = setInterval(showNext, 5000);
+  }
+
+  function stopAutoSlide() {
+    if (autoSlideInterval) clearInterval(autoSlideInterval);
+  }
+
+  function resetAutoSlide() {
+    stopAutoSlide();
+    startAutoSlide();
+  }
+
+  loadBanners();
+</script>
+
+
+
+</body>
+</html>

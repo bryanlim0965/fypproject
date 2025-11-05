@@ -14,6 +14,7 @@
     <h2>Admin Panel</h2>
     <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
     <a href="admingame.html" class="active"><i class='bx bxs-game'></i> Game Management</a>
+      <a href="adminitems.html"><i class='bx bxs-package'></i> Item Management</a>
     <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
     <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
 
@@ -35,12 +36,14 @@
         <textarea id="gameDesc" placeholder="Description" required></textarea>
 
         <label for="gamePlatform">Platform:</label>
-        <select id="gamePlatform" required>
-          <option value="" disabled selected>Select Platform</option>
-          <option value="PS">PS</option>
-          <option value="Xbox">Xbox</option>
-          <option value="Nintendo">Nintendo</option>
-        </select>
+<select id="gamePlatform" required>
+  <option value="" disabled selected>Select Platform</option>
+  <option value="PS5">PS5</option>
+  <option value="PS4">PS4</option>
+  <option value="Xbox">Xbox</option>
+  <option value="Nintendo">Nintendo</option>
+</select>
+
 
         <input type="number" id="gamePrice" placeholder="Price" min="0" step="0.01" required>
         <input type="number" id="gameStock" placeholder="Stock Quantity" min="0" required>
@@ -61,11 +64,13 @@
     <div style="display: flex; gap: 10px; align-items: center;">
       <input type="text" id="gameSearch" placeholder="Search by name..." style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
       <select id="platformFilter" style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
-        <option value="">All Platforms</option>
-        <option value="PS">PS</option>
-        <option value="Xbox">Xbox</option>
-        <option value="Nintendo">Nintendo</option>
-      </select>
+  <option value="">All Platforms</option>
+  <option value="PS5">PS5</option>
+  <option value="PS4">PS4</option>
+  <option value="Xbox">Xbox</option>
+  <option value="Nintendo">Nintendo</option>
+</select>
+
     </div>
   </div>
 
@@ -144,32 +149,61 @@
     }
 
     function displayGames() {
-      const searchTerm = gameSearch.value.toLowerCase();
-      const platformTerm = platformFilter.value;
+  const searchTerm = (gameSearch.value || "").toLowerCase().trim();
+  const platformTerm = (platformFilter.value || "").toLowerCase().trim();
 
-      gamesTableBody.innerHTML = "";
-      allGames.forEach(data => {
-        if (
-          (platformTerm === "" || data.platform === platformTerm) &&
-          (data.name.toLowerCase().includes(searchTerm))
-        ) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${data.name}</td>
-            <td>${data.description}</td>
-            <td>${data.platform || ''}</td>
-            <td>RM ${data.price.toFixed(2)}</td>
-            <td>${data.stock}</td>
-            <td>${data.image ? `<img src="${data.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">` : 'No Image'}</td>
-            <td>
-              <button class="edit-btn" data-id="${data.id}">Edit</button>
-              <button class="delete-btn" data-id="${data.id}">Delete</button>
-            </td>
-          `;
-          gamesTableBody.appendChild(tr);
-        }
-      });
+  gamesTableBody.innerHTML = "";
+
+  allGames.forEach(data => {
+    const nameSafe = (data.name || data.title || data.gameName || "").toLowerCase();
+    const descSafe = (data.description || data.desc || "").toLowerCase();
+    const platSafe = (data.platform || "").toLowerCase();
+
+    // === Match logic ===
+    let matchesPlatform = false;
+    if (platformTerm === "") {
+      matchesPlatform = true; // show all
+    } else if (platformTerm === "ps4") {
+      matchesPlatform = platSafe.includes("ps4");
+    } else if (platformTerm === "ps5") {
+      matchesPlatform = platSafe.includes("ps5");
+    } else if (platformTerm === "xbox") {
+      matchesPlatform = platSafe.includes("xbox");
+    } else if (platformTerm === "nintendo") {
+      matchesPlatform = platSafe.includes("nintendo");
     }
+
+    const matchesSearch =
+      searchTerm === "" ||
+      nameSafe.includes(searchTerm) ||
+      descSafe.includes(searchTerm);
+
+    if (matchesPlatform && matchesSearch) {
+      const priceNum = Number(data.price || 0);
+      const stockNum = Number.isFinite(Number(data.stock)) ? Number(data.stock) : 0;
+      const imgCell = data.image
+        ? `<img src="${data.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">`
+        : 'No Image';
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${data.name || data.title || data.gameName || "(Untitled)"}</td>
+        <td>${data.description || data.desc || ""}</td>
+        <td>${data.platform || ""}</td>
+        <td>RM ${priceNum.toFixed(2)}</td>
+        <td>${stockNum}</td>
+        <td>${imgCell}</td>
+        <td>
+          <button class="edit-btn" data-id="${data.id}">Edit</button>
+          <button class="delete-btn" data-id="${data.id}">Delete</button>
+        </td>
+      `;
+      gamesTableBody.appendChild(tr);
+    }
+  });
+}
+
+
 
     // Add or update game
     gameForm.addEventListener("submit", async (e) => {

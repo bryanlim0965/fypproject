@@ -182,7 +182,6 @@
                 <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
                 <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
                 <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
-
                 <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
               </div>
 
@@ -244,26 +243,98 @@
       </nav>
     </header>
 
-    <!-- === Game Listing Section === -->
-  <section class="games-section" style="padding: 40px;">
-    <h2 style="font-size: 2rem; font-weight: 700; color: #ff4757; text-align: center; margin-bottom: 10px;" id="gamesHeading">
-  Available Games
-</h2>
-<p id="gamesSubtitle" style="color:#bbb; text-align:center; margin-bottom:30px;"></p>
+    <!-- ===== My Tickets Content ===== -->
+<main>
+  <h2 class="page-title">My Support Tickets</h2>
+  <div class="ticket-list" id="ticketList">
+    <div class="no-tickets">Loading your tickets...</div>
+  </div>
+</main>
 
-<div id="gamesContainer" class="games-grid"></div>
+<style>
+  main {
+    max-width: 1100px;
+    margin: 80px auto;
+    padding: 20px;
+  }
 
+  h2.page-title {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+    color: #fff;
+  }
 
-      <!-- Games will load here -->
-    </div>
-  </section>
+  .ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
 
-  <!-- === Game Listing Logic === -->
-  <!-- === Game Listing Logic (Fixed for undefined titles) === -->
-  <script type="module">
+  .ticket-card {
+    background: #1a1a1a;
+    border: 1px solid #262626;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.3);
+    transition: transform .2s ease;
+    cursor: pointer;
+  }
+
+  .ticket-card:hover { transform: scale(1.02); }
+
+  .ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .ticket-header h3 {
+    font-size: 1.1rem;
+    color: #fff;
+    margin: 0;
+  }
+
+  .ticket-status {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: .85rem;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .status-open { background: #ff4757; color: #fff; }
+  .status-replied { background: #ffa502; color: #000; }
+  .status-closed { background: #2ed573; color: #000; }
+
+  .ticket-body {
+    font-size: .95rem;
+    color: #ccc;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+  }
+
+  .ticket-footer {
+    text-align: right;
+    font-size: .8rem;
+    color: #777;
+  }
+
+  .no-tickets {
+    text-align: center;
+    padding: 50px 0;
+    color: #888;
+  }
+</style>
+
+<!-- ===== Tickets Logic (Fixed) ===== -->
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+  // ✅ Use same config as the rest of your site
   const firebaseConfig = {
     apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
     authDomain: "final-year-b1cc2.firebaseapp.com",
@@ -274,107 +345,59 @@
     measurementId: "G-V6SWSF6F2D"
   };
 
+  // ✅ Initialize Firebase first
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+  const ticketList = document.getElementById("ticketList");
 
-  const container = document.getElementById("gamesContainer");
-  const headingEl = document.getElementById("gamesHeading");
-  const subtitleEl = document.getElementById("gamesSubtitle");
+  // ✅ Wait for auth to be ready before loading tickets
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      ticketList.innerHTML = `<div class="no-tickets">Please <a href='login.html'>log in</a> to view your tickets.</div>`;
+      return;
+    }
 
-
-  // Read ?platform= from URL
-  const params = new URLSearchParams(window.location.search);
-  const rawPlatform = params.get("platform");               // e.g. "Xbox"
-  // Optional: normalize some common aliases
-  const aliases = {
-    "xbox series x": "Xbox",
-    "xbox series s": "Xbox",
-    "nintendo": "Nintendo Switch",
-    "switch": "Nintendo Switch",
-    "ps": "PS5" // fallback if someone typed ps
-  };
-  const platform = rawPlatform
-    ? (aliases[rawPlatform.toLowerCase()] || rawPlatform)
-    : null;
-
-    const categoryParam = new URLSearchParams(window.location.search).get("category");
-let collectionName = "games";
-if (categoryParam === "consoles") collectionName = "consoles";
-else if (categoryParam === "peripherals") collectionName = "peripherals";
-else if (categoryParam === "toys") collectionName = "toys";
-else if (categoryParam === "lifestyle") collectionName = "lifestyle";
-
-  if (headingEl) {
-    headingEl.textContent = platform ? `Available Games — ${platform}` : "Available Games";
-  }
-
-  async function loadGames() {
     try {
-      container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
+      const q = query(collection(db, "tickets"), where("uid", "==", user.uid));
+      const snap = await getDocs(q);
 
-      // Build the query: filter when platform is specified; otherwise get all.
-      let qRef;
-      if (platform) {
-        qRef = query(collection(db, "games"), where("platform", "==", platform));
-      } else {
-        qRef = collection(db, "games");
-      }
-
-      const snapshot = await getDocs(qRef);
-
-      container.innerHTML = "";
-
-      if (snapshot.empty) {
-        container.innerHTML = `<p style="color:#ccc; text-align:center;">No games found${platform ? ` for ${platform}` : ""}.</p>`;
+      if (snap.empty) {
+        ticketList.innerHTML = `<div class="no-tickets">You haven’t submitted any tickets yet.</div>`;
         return;
       }
 
-      snapshot.forEach(docSnap => {
-        const game = docSnap.data();
-
-        const title =
-          game.title || game.name || game.gameName || game.GameName || game.Title || "Untitled Game";
-
-        const price = Number(game.price || game.cost || game.amount || 0);
-        const image = game.image || game.imageURL || game.thumbnail || "https://via.placeholder.com/250x300?text=No+Image";
+      ticketList.innerHTML = "";
+      snap.forEach(doc => {
+        const t = doc.data();
+        const statusClass =
+          t.status === "Closed" ? "status-closed" :
+          t.status === "Replied" ? "status-replied" : "status-open";
+        const time = t.createdAt?.toDate?.() ? t.createdAt.toDate().toLocaleString() : "";
 
         const card = document.createElement("div");
-        card.classList.add("game-card");
-        card.classList.add("game-card");
+        card.className = "ticket-card";
+        card.innerHTML = `
+          <div class="ticket-header">
+            <h3>${t.subject || "Untitled Ticket"}</h3>
+            <span class="ticket-status ${statusClass}">${t.status || "Open"}</span>
+          </div>
+          <div class="ticket-body">${t.message || ""}</div>
+          <div class="ticket-footer">${time}</div>
+        `;
+        card.addEventListener("click", () => {
+  window.location.href = `ticket_chat.html?id=${doc.id}`;
+});
 
-card.innerHTML = `
-  <img class="game-thumb" src="${image}" alt="${title}">
-  <div class="game-body">
-    <h3 class="game-title">${title}</h3>
-    <p class="game-price">RM ${price.toLocaleString()}</p>
-  </div>
-  <div class="game-actions">
-    <button class="btn view-btn">View</button>
-    <button class="btn btn-primary add-to-cart">Add to Cart</button>
-  </div>
-`;
-
-
-        // Navigate to details if View or card (except add-to-cart) is clicked
-        card.addEventListener("click", (e) => {
-          if (!e.target.classList.contains("add-to-cart")) {
-            window.location.href = `game-details.html?id=${docSnap.id}`;
-          }
-        });
-
-        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
-        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-
-        container.appendChild(card);
+        ticketList.appendChild(card);
       });
-    } catch (err) {
-      console.error("Error loading games:", err);
-      container.innerHTML = `<p style="color:#f55;text-align:center;">Error loading games.</p>`;
+    } catch (error) {
+      console.error("Error loading tickets:", error);
+      ticketList.innerHTML = `<div class="no-tickets">⚠️ Failed to load tickets. Please try again later.</div>`;
     }
-  }
-
-  loadGames();
+  });
 </script>
+
 
 
 

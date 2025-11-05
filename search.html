@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Search Results | Game Store</title>
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="landing.html" class="brand"><img src="Images/logo.png" alt="Brand"></a>
+  </header>
+
+  <main style="max-width:900px;margin:40px auto;padding:20px;color:#fff;">
+    <h2 id="searchTitle">Search Results</h2>
+    <div id="results">Loading...</div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get("q")?.trim().toLowerCase() || "";
+    document.getElementById("searchTitle").textContent = `Results for "${query}"`;
+
+    const resultsContainer = document.getElementById("results");
+
+    async function performSearch() {
+      if (!query) {
+        resultsContainer.textContent = "Please enter a search term.";
+        return;
+      }
+
+      const collections = ["games", "items", "consoles"];
+      const results = [];
+
+      for (const col of collections) {
+        const snapshot = await getDocs(collection(db, col));
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (
+            data.title?.toLowerCase().includes(query) ||
+            data.platform?.toLowerCase().includes(query) ||
+            data.category?.toLowerCase().includes(query)
+          ) {
+            results.push({
+              id: doc.id,
+              title: data.title || "Untitled",
+              image: data.image || data.coverURL || "Images/no-image.png",
+              price: data.price || "N/A",
+              type: col
+            });
+          }
+        });
+      }
+
+      if (results.length === 0) {
+        resultsContainer.innerHTML = `<p>No results found.</p>`;
+        return;
+      }
+
+      resultsContainer.innerHTML = results
+        .map(
+          (item) => `
+          <div class="result-card">
+            <img src="${item.image}" alt="${item.title}">
+            <div class="info">
+              <h3>${item.title}</h3>
+              <p>Category: ${item.type}</p>
+              <p>Price: RM ${item.price}</p>
+            </div>
+          </div>`
+        )
+        .join("");
+    }
+
+    performSearch();
+  </script>
+
+  <style>
+    body { background:#0b0b0b; font-family:Poppins,sans-serif; }
+    .result-card {
+      display:flex; gap:20px; align-items:center;
+      background:#1a1a1a; border-radius:10px;
+      padding:12px; margin:10px 0; border:1px solid #222;
+    }
+    .result-card img {
+      width:100px; height:100px; object-fit:cover; border-radius:8px;
+    }
+    .info h3 { margin:0; color:#fff; }
+    .info p { margin:4px 0; color:#ccc; font-size:0.9rem; }
+  </style>
+</body>
+</html>

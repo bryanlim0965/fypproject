@@ -181,6 +181,8 @@
               <div class="uc-items">
                 <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
                 <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+                <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
+
                 <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
               </div>
 
@@ -217,28 +219,27 @@
 </li>
 
           <li class="has-sub">
-            <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
-            <ul class="submenu">
-              <li><a href="#">Keyboards</a></li>
-              <li><a href="#">Mice</a></li>
-              <li><a href="#">Monitors</a></li>
-            </ul>
-          </li>
-          <li class="has-sub">
-            <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
-            <ul class="submenu">
-              <li><a href="#">Figures</a></li>
-              <li><a href="#">Limited Editions</a></li>
-            </ul>
-          </li>
-          <li class="has-sub">
-            <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
-            <ul class="submenu">
-              <li><a href="#">Apparel</a></li>
-              <li><a href="#">Bags</a></li>
-              <li><a href="#">Posters</a></li>
-            </ul>
-          </li>
+          <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=peripherals&platform=kb">Keyboards</a></li>
+            <li><a href="items.html?category=peripherals&platform=mice">Mice</a></li>
+            <li><a href="items.html?category=peripherals&platform=monitor">Monitors</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=toys&platform=LE">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=figures">Figures</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=lifestyle&platform=apparel">Apparel</a></li>
+            <li><a href="items.html?category=lifestyle&platform=bag">Bags</a></li>
+          </ul>
+        </li>
         </ul>
       </nav>
     </header>
@@ -246,7 +247,7 @@
     <!-- === Game Listing Section === -->
   <section class="games-section" style="padding: 40px;">
     <h2 style="font-size: 2rem; font-weight: 700; color: #ff4757; text-align: center; margin-bottom: 30px;">
-      Available Games
+      Available Consoles
     </h2>
 
     <div id="gamesContainer" class="games-grid"></div>

@@ -79,8 +79,6 @@
             <div class="uc-items">
               <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
               <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
-              <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
-
               <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
             </div>
             <button class="uc-item uc-logout" id="logoutBtn"><i class='bx bx-log-out'></i> Logout</button>
@@ -197,7 +195,7 @@ const userMenu   = document.getElementById("userMenu");
 const userBtn    = document.getElementById("userBtn");
 const logoutBtn  = document.getElementById("logoutBtn");
 const userNameLg = document.getElementById("userNameLarge");
-const userPoints = document.getElementById("userPoints"); // Add <div id="userPoints"></div> in your user card if needed
+const userPoints = document.getElementById("userPoints");
 const userAvatar = document.getElementById("userAvatar");
 
 // Helper: initials
@@ -206,19 +204,6 @@ function initialsFrom(nameOrEmail){
   const parts = base.includes("@") ? [base.split("@")[0]] : base.split(" ");
   const letters = parts.filter(Boolean).slice(0,2).map(s => s[0].toUpperCase());
   return letters.join('') || 'U';
-}
-
-// Fetch or initialize user data
-async function fetchUserData(uid, email){
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  if(snap.exists()){
-    const data = snap.data();
-    return { name: data.username || email.split("@")[0], points: data.points || 0 };
-  } else {
-    await setDoc(userRef, { username: email.split("@")[0], points: 0, email: email });
-    return { name: email.split("@")[0], points: 0 };
-  }
 }
 
 // Show UI for logged in/out
@@ -235,7 +220,7 @@ function showLoggedOutDisplay(){
   if(userMenu) userMenu.style.display = "none";
 }
 
-// Instant display using localStorage to prevent flicker
+// Instant display using localStorage
 let name = localStorage.getItem("name");
 let points = localStorage.getItem("points");
 if (name) showLoggedInDisplay(name, points);
@@ -246,7 +231,6 @@ onAuthStateChanged(auth, async (user) => {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Create user record if not found
       await setDoc(userRef, {
         name: user.displayName || user.email.split("@")[0],
         email: user.email,
@@ -256,13 +240,9 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     const userData = (await getDoc(userRef)).data();
-
-    // Store in localStorage
     localStorage.setItem("name", userData.name);
     localStorage.setItem("points", userData.points);
-
-    // Display user's full name
-    showLoggedInDisplay(userData.name, userData.points);
+    showLoggedInDisplay(userData.name, userData.points, userData.email);
   } else {
     localStorage.removeItem("name");
     localStorage.removeItem("points");
@@ -303,12 +283,11 @@ if(logoutBtn){
 }
 </script>
 
-<!-- 🟢 Load game details dynamically from Firestore -->
+<!-- 🟢 Load item details dynamically from Firestore (items/{id}) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Same Firebase config (you can reuse your existing one)
   const firebaseConfig = {
     apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
     authDomain: "final-year-b1cc2.firebaseapp.com",
@@ -322,9 +301,9 @@ if(logoutBtn){
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Get game ID from URL
+  // Get item ID from URL
   const params = new URLSearchParams(window.location.search);
-  const gameId = params.get("id");
+  const gameId = params.get("id"); // keep the same var name used in your template
 
   // Target elements
   const gameCover = document.querySelector(".game-cover img");
@@ -334,22 +313,22 @@ if(logoutBtn){
 
   async function loadGameDetails() {
     if (!gameId) {
-      gameTitle.textContent = "Game not found";
-      gameDesc.textContent = "No game ID was provided in the URL.";
+      gameTitle.textContent = "Item not found";
+      gameDesc.textContent = "No item ID was provided in the URL.";
       return;
     }
 
     try {
-      const docRef = doc(db, "consoles", gameId);
+      // 🔁 Switched to 'items' collection
+      const docRef = doc(db, "items", gameId);
       const snap = await getDoc(docRef);
 
       if (snap.exists()) {
         const data = snap.data();
-        console.log("Loaded game:", data);
 
-        const title = data.title || data.name || "Untitled Game";
-        const price = data.price || 0;
-        const image = data.image || data.imageURL || "https://via.placeholder.com/400x500?text=No+Image";
+        const title = data.title || data.name || "Untitled Item";
+        const price = Number(data.price || 0);
+        const image = (data.image && data.image.trim()) ? data.image : "https://via.placeholder.com/400x500?text=No+Image";
         const desc  = data.description || data.desc || "No description available.";
 
         gameTitle.textContent = title;
@@ -358,12 +337,12 @@ if(logoutBtn){
         gameCover.src = image;
         gameCover.alt = title;
       } else {
-        gameTitle.textContent = "Game not found";
-        gameDesc.textContent = "This game may have been removed or does not exist.";
+        gameTitle.textContent = "Item not found";
+        gameDesc.textContent = "This item may have been removed or does not exist.";
       }
     } catch (err) {
-      console.error("Error loading game:", err);
-      gameTitle.textContent = "Error loading game";
+      console.error("Error loading item:", err);
+      gameTitle.textContent = "Error loading item";
       gameDesc.textContent = "An unexpected error occurred.";
     }
   }
@@ -373,17 +352,15 @@ if(logoutBtn){
 
 <!-- 🛒 Add to Cart Functionality -->
 <script type="module">
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Reuse Firebase app already initialized above
   const auth = getAuth();
   const db = getFirestore();
 
   const addToCartBtn = document.querySelector(".add-to-cart");
   const qtyInput = document.getElementById("qty");
 
-  // Get game info from page
   const gameTitle = document.querySelector(".game-info h2");
   const gamePrice = document.querySelector(".game-info .price");
   const gameCover = document.querySelector(".game-cover img");
@@ -393,34 +370,31 @@ if(logoutBtn){
 
     if (!user) {
       alert("Please log in to add items to your cart.");
-      window.location.href = "#";
+      window.location.href = "login.html";
       return;
     }
 
     const uid = user.uid;
     const gameId = new URLSearchParams(window.location.search).get("id");
-    const quantity = parseInt(qtyInput.value) || 1;
+    const quantity = Math.max(1, parseInt(qtyInput.value) || 1);
 
-    // Prepare cart item data
     const itemData = {
-      title: gameTitle.textContent,
-      price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
-      image: gameCover.src,
-      quantity: quantity,
-      addedAt: new Date()
-    };
+  title: gameTitle.textContent,
+  price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
+  image: gameCover.src,
+  quantity: finalQtyToAdd,
+  addedAt: new Date(),
+  src: "items" // 🔹 add this
+};
+
 
     const cartItemRef = doc(db, "users", uid, "cart", gameId);
     const existingSnap = await getDoc(cartItemRef);
 
     try {
       if (existingSnap.exists()) {
-        // Update quantity if item already exists
-        await updateDoc(cartItemRef, {
-          quantity: increment(quantity)
-        });
+        await updateDoc(cartItemRef, { quantity: increment(quantity) });
       } else {
-        // Create new cart item
         await setDoc(cartItemRef, itemData);
       }
       alert("✅ Added to cart!");
@@ -509,7 +483,3 @@ if(logoutBtn){
 <script src="landing.js"></script>
 </body>
 </html>
-
-
-
-

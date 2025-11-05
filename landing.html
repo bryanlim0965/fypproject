@@ -11,8 +11,31 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="landing.css" />
+  
 
   <style>
+    /* Make sure the search container creates its own stacking context */
+.search-container {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Make sure the dropdown is definitely on top */
+#results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 10000 !important; /* 🚀 Forces it above everything else */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
     /* === User menu (account card) === */
     .user-menu{ position:relative; display:none; }
     .user-btn{
@@ -60,6 +83,34 @@
       width:100%; text-align:left; margin-top:6px; color:#ff8080;
     }
     .uc-logout:hover{ background:#1b1b1d; color:#ffb3b3; }
+
+    #results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 9999; /* 👈 make sure it's above the navbar */
+}
+
+#results div {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+#results div:hover {
+  background: #f0f0f0;
+}
+.search-container {
+  position: relative;
+  width: 300px; /* or whatever width you want */
+}
+
   </style>
 </head>
 <body>
@@ -69,10 +120,16 @@
     <div class="topbar-row">
       <a href="landing.html" class="brand"><img src="Images/logo.png" alt="Brand Logo"></a>
 
-      <form class="search" action="#" method="get">
-        <input type="text" name="q" placeholder="Search" aria-label="Search games, consoles, accessories" />
-        <button type="submit" aria-label="Search"><i class='bx bx-search'></i></button>
-      </form>
+      <div class="search-container" style="position: relative; width: 500px;"> <!-- increase width here -->
+  <input type="text" id="searchBox" placeholder="Search games..." autocomplete="off"
+         style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"> <!-- use 100% for full container width -->
+  <div id="results"
+       style="position: absolute; background: white; border: 1px solid #ccc; width: 100%; display: none;
+              max-height: 200px; overflow-y: auto; border-radius: 4px; z-index: 1000;">
+  </div>
+</div>
+
+
 
       <div class="actions">
         <a href="redeem.html" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
@@ -100,6 +157,7 @@
             <div class="uc-items">
               <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
               <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+              <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
               <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
             </div>
 
@@ -120,10 +178,10 @@
         <li class="has-sub">
           <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">PS</a></li>
-            <li><a href="#">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
-          </ul>
+              <li><a href="consoles.html?platform=PS">PS</a></li>
+    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
+            </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
@@ -137,24 +195,23 @@
         <li class="has-sub">
           <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Keyboards</a></li>
-            <li><a href="#">Mice</a></li>
-            <li><a href="#">Monitors</a></li>
+            <li><a href="items.html?category=peripherals&platform=kb">Keyboards</a></li>
+            <li><a href="items.html?category=peripherals&platform=mice">Mice</a></li>
+            <li><a href="items.html?category=peripherals&platform=monitor">Monitors</a></li>
           </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Figures</a></li>
-            <li><a href="#">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=LE">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=figures">Figures</a></li>
           </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Apparel</a></li>
-            <li><a href="#">Bags</a></li>
-            <li><a href="#">Posters</a></li>
+            <li><a href="items.html?category=lifestyle&platform=apparel">Apparel</a></li>
+            <li><a href="items.html?category=lifestyle&platform=bag">Bags</a></li>
           </ul>
         </li>
       </ul>
@@ -623,6 +680,86 @@ if (logoutBtn){
 
   loadBanners();
 </script>
+<script type="module">
+import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// ✅ Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+  authDomain: "final-year-b1cc2.firebaseapp.com",
+  projectId: "final-year-b1cc2",
+  storageBucket: "final-year-b1cc2.appspot.com",
+  messagingSenderId: "537245015385",
+  appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+  measurementId: "G-V6SWSF6F2D"
+};
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const searchBox = document.getElementById("searchBox");
+const results = document.getElementById("results");
+
+let games = [];
+
+// Load all games from Firestore
+async function loadGames() {
+  const querySnapshot = await getDocs(collection(db, "games"));
+  games = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+loadGames();
+
+// Display search results
+function showResults(list) {
+  results.innerHTML = "";
+  if (!list.length) {
+    results.style.display = "none";
+    return;
+  }
+
+  list.slice(0, 5).forEach(game => {
+    const item = document.createElement("div");
+    item.classList.add("result-item");
+    item.textContent = game.name;
+    item.style.padding = "8px";
+    item.style.cursor = "pointer";
+
+    // Highlight on hover
+    item.addEventListener("mouseover", () => item.style.background = "#f0f0f0");
+    item.addEventListener("mouseout", () => item.style.background = "white");
+
+    // Navigate to game-details page
+    item.addEventListener("click", () => {
+      results.style.display = "none"; // hide dropdown
+      window.location.href = `game-details.html?id=${game.id}`;
+    });
+
+    results.appendChild(item);
+  });
+
+  results.style.display = "block";
+}
+
+// Filter games as user types
+searchBox.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase().trim();
+  if (!q) {
+    results.style.display = "none";
+    return;
+  }
+  const filtered = games.filter(g => g.name && g.name.toLowerCase().includes(q));
+  showResults(filtered);
+});
+
+// Optional: hide results if user clicks outside
+document.addEventListener("click", e => {
+  if (!searchBox.contains(e.target) && !results.contains(e.target)) {
+    results.style.display = "none";
+  }
+});
+</script>
+
 
 
 

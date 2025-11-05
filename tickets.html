@@ -11,6 +11,122 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="landing.css" />
+    
+
+    <style>
+    
+    /* Support Ticket Styles */
+    /* 🧾 Support Ticket Styles - modernized */
+.support-section {
+  padding: 60px 20px;
+  max-width: 700px;
+  margin: 0 auto;
+  color: #fff;
+  text-align: center;
+}
+
+.support-section h2 {
+  color: #ff4757;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.support-section p {
+  color: #bbb;
+  margin-bottom: 30px;
+}
+
+.support-form {
+    text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid #2b2b2b;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.4);
+  backdrop-filter: blur(4px);
+}
+.support-form label {
+  text-align: left;
+  display: block;
+  color: #e8e8e8;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.support-form input,
+.support-form textarea {
+  width: 100%;
+  background: #0d0d0d;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  font-family: "Poppins", sans-serif;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.support-form input:focus,
+.support-form textarea:focus {
+  outline: none;
+  border-color: #ff4757;
+  background: #141414;
+}
+
+.support-form textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+
+.support-form button {
+  background: #ff2e2e;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 14px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.support-form button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.success-msg {
+  background: #28a745;
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  margin-top: 25px;
+  display: none;
+  font-weight: 600;
+}
+
+.call-section {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.call-section a {
+  color: #00ff99;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.call-section a:hover {
+  text-decoration: underline;
+}
+
+  </style>
 
     <style>
       /* Grid */
@@ -244,141 +360,117 @@
       </nav>
     </header>
 
-    <!-- === Game Listing Section === -->
-  <section class="games-section" style="padding: 40px;">
-    <h2 style="font-size: 2rem; font-weight: 700; color: #ff4757; text-align: center; margin-bottom: 10px;" id="gamesHeading">
-  Available Games
-</h2>
-<p id="gamesSubtitle" style="color:#bbb; text-align:center; margin-bottom:30px;"></p>
+    <section class="support-section">
+    <h2>Submit a Support Ticket</h2>
+    <p>Need help? Fill in the form below and our team will get back to you as soon as possible.</p>
 
-<div id="gamesContainer" class="games-grid"></div>
+    <form id="ticketForm" class="support-form">
+      <div>
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Your name" required />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="your@email.com" required />
+      </div>
+      <div>
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" placeholder="Subject of your issue" required />
+      </div>
+      <div>
+        <label for="message">Message</label>
+        <textarea id="message" placeholder="Describe your issue..." required></textarea>
+      </div>
+      <button type="submit">Submit Ticket</button>
+    </form>
 
+    <div id="successMsg" class="success-msg">✅ Your ticket has been submitted successfully!</div>
 
-      <!-- Games will load here -->
+    <div class="call-section">
+      <p>Prefer to talk? 📞 Call <a href="tel:0164469222">Rav Store at 016-446 9222</a></p>
     </div>
   </section>
 
-  <!-- === Game Listing Logic === -->
-  <!-- === Game Listing Logic (Fixed for undefined titles) === -->
+  <!-- === Firebase Ticket Submission === -->
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
-    authDomain: "final-year-b1cc2.firebaseapp.com",
-    projectId: "final-year-b1cc2",
-    storageBucket: "final-year-b1cc2.firebasestorage.app",
-    messagingSenderId: "537245015385",
-    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
-    measurementId: "G-V6SWSF6F2D"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+      measurementId: "G-V6SWSF6F2D"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  const container = document.getElementById("gamesContainer");
-  const headingEl = document.getElementById("gamesHeading");
-  const subtitleEl = document.getElementById("gamesSubtitle");
+    const nameInput = document.getElementById("name");
+    const emailInput = document.getElementById("email");
+    const subjectInput = document.getElementById("subject");
+    const messageInput = document.getElementById("message");
+    const form = document.getElementById("ticketForm");
+    const successMsg = document.getElementById("successMsg");
 
+    let currentUser = null;
 
-  // Read ?platform= from URL
-  const params = new URLSearchParams(window.location.search);
-  const rawPlatform = params.get("platform");               // e.g. "Xbox"
-  // Optional: normalize some common aliases
-  const aliases = {
-    "xbox series x": "Xbox",
-    "xbox series s": "Xbox",
-    "nintendo": "Nintendo Switch",
-    "switch": "Nintendo Switch",
-    "ps": "PS5" // fallback if someone typed ps
-  };
-  const platform = rawPlatform
-    ? (aliases[rawPlatform.toLowerCase()] || rawPlatform)
-    : null;
-
-    const categoryParam = new URLSearchParams(window.location.search).get("category");
-let collectionName = "games";
-if (categoryParam === "consoles") collectionName = "consoles";
-else if (categoryParam === "peripherals") collectionName = "peripherals";
-else if (categoryParam === "toys") collectionName = "toys";
-else if (categoryParam === "lifestyle") collectionName = "lifestyle";
-
-  if (headingEl) {
-    headingEl.textContent = platform ? `Available Games — ${platform}` : "Available Games";
-  }
-
-  async function loadGames() {
-    try {
-      container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
-
-      // Build the query: filter when platform is specified; otherwise get all.
-      let qRef;
-      if (platform) {
-        qRef = query(collection(db, "games"), where("platform", "==", platform));
-      } else {
-        qRef = collection(db, "games");
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        nameInput.value = user.displayName || localStorage.getItem("name") || "";
+        emailInput.value = user.email;
       }
+    });
 
-      const snapshot = await getDocs(qRef);
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-      container.innerHTML = "";
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const subject = subjectInput.value.trim();
+      const message = messageInput.value.trim();
 
-      if (snapshot.empty) {
-        container.innerHTML = `<p style="color:#ccc; text-align:center;">No games found${platform ? ` for ${platform}` : ""}.</p>`;
+      if (!name || !email || !subject || !message) {
+        alert("Please fill in all fields.");
         return;
       }
 
-      snapshot.forEach(docSnap => {
-        const game = docSnap.data();
+      try {
+        // Create the main ticket
+const ticketRef = await addDoc(collection(db, "tickets"), {
+  name,
+  email,
+  subject,
+  uid: currentUser ? currentUser.uid : null,
+  status: "Open",
+  createdAt: serverTimestamp()
+});
 
-        const title =
-          game.title || game.name || game.gameName || game.GameName || game.Title || "Untitled Game";
-
-        const price = Number(game.price || game.cost || game.amount || 0);
-        const image = game.image || game.imageURL || game.thumbnail || "https://via.placeholder.com/250x300?text=No+Image";
-
-        const card = document.createElement("div");
-        card.classList.add("game-card");
-        card.classList.add("game-card");
-
-card.innerHTML = `
-  <img class="game-thumb" src="${image}" alt="${title}">
-  <div class="game-body">
-    <h3 class="game-title">${title}</h3>
-    <p class="game-price">RM ${price.toLocaleString()}</p>
-  </div>
-  <div class="game-actions">
-    <button class="btn view-btn">View</button>
-    <button class="btn btn-primary add-to-cart">Add to Cart</button>
-  </div>
-`;
+// 🟢 Add the first message to the chat (subcollection)
+await addDoc(collection(db, "tickets", ticketRef.id, "messages"), {
+  sender: "user",
+  text: message,
+  timestamp: serverTimestamp()
+});
 
 
-        // Navigate to details if View or card (except add-to-cart) is clicked
-        card.addEventListener("click", (e) => {
-          if (!e.target.classList.contains("add-to-cart")) {
-            window.location.href = `game-details.html?id=${docSnap.id}`;
-          }
-        });
+        form.reset();
+        successMsg.style.display = "block";
+        setTimeout(() => successMsg.style.display = "none", 4000);
+      } catch (err) {
+        console.error("Error submitting ticket:", err);
+        alert("Failed to submit your ticket. Please try again later.");
+      }
+    });
+  </script>
 
-        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
-        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Error loading games:", err);
-      container.innerHTML = `<p style="color:#f55;text-align:center;">Error loading games.</p>`;
-    }
-  }
-
-  loadGames();
-</script>
-
-
-
-    </div>
+   
 
     <!-- Firebase + user points logic -->
     <script type="module">

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Tickets</title>
+  <link rel="stylesheet" href="admin.css"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+</head>
+<body class="dashboard-page">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
+    <a href="admingame.html"><i class='bx bxs-game'></i> Game Management</a>
+    <a href="adminitems.html"><i class='bx bxs-package'></i> Item Management</a>
+    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
+    <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
+    <a href="admintickets.html" class="active"><i class='bx bxs-message-dots'></i> Tickets</a>
+
+    <div class="logout-section">
+      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Support Tickets</h1>
+
+    <!-- Filters / search -->
+    <div class="section" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label for="statusFilter">Status:</label>
+        <select id="statusFilter">
+          <option value="">All</option>
+          <option value="open">Open</option>
+          <option value="pending">Pending</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+      <input id="searchBox" type="text" placeholder="Search by user, subject or message..." style="flex:1; min-width:240px;"/>
+      <button id="refreshBtn">Refresh</button>
+    </div>
+
+    <!-- Tickets table -->
+    <div class="section">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>User</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Last Update</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ticketsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Drawer / modal for a single ticket -->
+    <div id="ticketModal" class="card" style="display:none; position:fixed; right:20px; bottom:20px; width:420px; max-width:95vw; z-index:1000;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h2 id="modalSubject" style="margin:0;">Ticket</h2>
+        <button id="closeModal" class="btn secondary">Close</button>
+      </div>
+      <div id="modalMeta" style="font-size:.9rem; opacity:.85; margin-bottom:10px;"></div>
+
+      <div id="messagesBox" style="max-height:40vh; overflow:auto; border:1px solid var(--border,#222); border-radius:12px; padding:12px; background:rgba(255,255,255,0.02);"></div>
+
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <select id="modalStatus" style="min-width:140px;">
+          <option value="open">Open</option>
+          <option value="pending">Pending</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+        <button id="saveStatusBtn">Save Status</button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="replyText" style="display:block; margin-bottom:6px; font-weight:600;">Reply</label>
+        <textarea id="replyText" rows="3" placeholder="Type your reply to the user..." style="width:100%;"></textarea>
+        <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+          <button id="sendReplyBtn">Send Reply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    orderBy,
+    query,
+    doc,
+    updateDoc,
+    arrayUnion,
+    serverTimestamp,
+    getDoc,
+    addDoc,
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const ticketsBody   = document.getElementById('ticketsBody');
+  const statusFilter  = document.getElementById('statusFilter');
+  const searchBox     = document.getElementById('searchBox');
+  const refreshBtn    = document.getElementById('refreshBtn');
+
+  const ticketModal   = document.getElementById('ticketModal');
+  const closeModalBtn = document.getElementById('closeModal');
+  const modalSubject  = document.getElementById('modalSubject');
+  const modalMeta     = document.getElementById('modalMeta');
+  const modalStatus   = document.getElementById('modalStatus');
+  const messagesBox   = document.getElementById('messagesBox');
+  const replyText     = document.getElementById('replyText');
+  const sendReplyBtn  = document.getElementById('sendReplyBtn');
+  const saveStatusBtn = document.getElementById('saveStatusBtn');
+
+  let allTickets = [];
+  let openTicketRef = null;
+  let messagesUnsub = null;
+
+  function toMillis(ts) {
+    if (!ts) return 0;
+    if (typeof ts === "number") return ts;
+    if (ts instanceof Date) return ts.getTime();
+    if (typeof ts === "object" && ("seconds" in ts || "nanoseconds" in ts)) {
+      return (ts.seconds || 0) * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+    }
+    const d = new Date(ts);
+    return isNaN(d) ? 0 : d.getTime();
+  }
+
+  function truncate(str, n = 80) {
+    const s = String(str || "");
+    return s.length > n ? s.slice(0, n - 1) + "…" : s;
+  }
+
+  function r(cells) {
+    return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
+  }
+
+  async function loadTickets() {
+    const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    allTickets = [];
+    snap.forEach(d => {
+      const data = d.data();
+      allTickets.push({ id: d.id, ref: doc(db, 'tickets', d.id), ...data });
+    });
+    renderTickets();
+  }
+
+  function renderTickets() {
+    const f = statusFilter.value.trim().toLowerCase();
+    const s = searchBox.value.trim().toLowerCase();
+    ticketsBody.innerHTML = '';
+
+    const filtered = allTickets.filter(t => {
+      const st = String(t.status || '').toLowerCase();
+      const u = (t.userEmail || t.userName || t.username || '').toLowerCase();
+      const subj = String(t.subject || '').toLowerCase();
+      const msg = (t.message || '').toLowerCase();
+      const okStatus = !f || st === f;
+      const okSearch = !s || u.includes(s) || subj.includes(s) || msg.includes(s);
+      return okStatus && okSearch;
+    });
+
+    filtered.forEach(t => {
+      const created = toMillis(t.createdAt) ? new Date(toMillis(t.createdAt)).toLocaleString() : '-';
+      const lastAt = toMillis(t.updatedAt || t.createdAt) ? new Date(toMillis(t.updatedAt || t.createdAt)).toLocaleString() : '-';
+      const subject = truncate(t.subject || '(no subject)');
+      const user = t.userEmail || t.userName || t.username || t.uid || 'Unknown';
+      const status = t.status || 'open';
+
+      const viewBtn = `<button class="btn" data-id="${t.id}" data-action="view">View</button>`;
+      const quickResolve = `<button class="btn secondary" data-id="${t.id}" data-action="resolve">Resolve</button>`;
+      ticketsBody.insertAdjacentHTML('beforeend', r([created, user, subject, status, lastAt, `${viewBtn} ${quickResolve}`]));
+    });
+  }
+
+  ticketsBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    const action = btn.getAttribute('data-action');
+    const ticket = allTickets.find(t => t.id === id);
+    if (!ticket) return;
+
+    if (action === 'view') {
+      openTicketRef = ticket.ref;
+      openTicket(ticket);
+    } else if (action === 'resolve') {
+      await updateDoc(ticket.ref, { status: 'resolved', updatedAt: serverTimestamp() });
+      await loadTickets();
+    }
+  });
+
+  function renderMessagesFromDocs(docs) {
+    messagesBox.innerHTML = '';
+    docs.forEach(d => {
+      const m = d.data();
+      const when = m.timestamp ? new Date(m.timestamp.seconds ? m.timestamp.seconds * 1000 : m.timestamp).toLocaleString() : '';
+      const who = (m.sender || 'user').toUpperCase();
+      const bubble = document.createElement('div');
+      bubble.style.margin = '6px 0';
+      bubble.innerHTML = `
+        <div style="font-size:.8rem; opacity:.7;">${who} • ${when}</div>
+        <div style="padding:8px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border,#222); border-radius:10px;">
+          ${(m.text || '').replace(/</g, '&lt;')}
+        </div>`;
+      messagesBox.appendChild(bubble);
+    });
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+  }
+
+  function startMessagesListener(ticketId) {
+    if (messagesUnsub) messagesUnsub();
+    const messagesCol = collection(db, "tickets", ticketId, "messages");
+    const q = query(messagesCol, orderBy("timestamp", "asc"));
+    messagesUnsub = onSnapshot(q, snap => {
+      if (snap.empty) {
+        messagesBox.innerHTML = '<p style="opacity:.8;">No conversation yet.</p>';
+        return;
+      }
+      renderMessagesFromDocs(snap.docs);
+    }, err => console.error("Messages listener error:", err));
+  }
+
+  function stopMessagesListener() {
+    if (messagesUnsub) {
+      messagesUnsub();
+      messagesUnsub = null;
+    }
+  }
+
+  function openTicket(t) {
+    modalSubject.textContent = t.subject || '(no subject)';
+    const created = toMillis(t.createdAt) ? new Date(toMillis(t.createdAt)).toLocaleString() : '-';
+    modalMeta.textContent = `${t.userEmail || t.userName || t.username || t.uid || 'Unknown'} • Created ${created}`;
+    modalStatus.value = (t.status || 'open').toLowerCase();
+
+    messagesBox.innerHTML = '';
+    if (t.message) {
+      const when = created;
+      const bubble = document.createElement('div');
+      bubble.style.margin = '6px 0';
+      bubble.innerHTML = `
+        <div style="font-size:.8rem; opacity:.7;">USER • ${when}</div>
+        <div style="padding:8px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border,#222); border-radius:10px;">
+          ${(t.message || '').replace(/</g, '&lt;')}
+        </div>`;
+      messagesBox.appendChild(bubble);
+    }
+
+    ticketModal.style.display = 'block';
+    startMessagesListener(t.id);
+  }
+
+  closeModalBtn.addEventListener('click', () => {
+    ticketModal.style.display = 'none';
+    openTicketRef = null;
+    replyText.value = '';
+    stopMessagesListener();
+  });
+
+  saveStatusBtn.addEventListener('click', async () => {
+    if (!openTicketRef) return;
+    await updateDoc(openTicketRef, { status: modalStatus.value, updatedAt: serverTimestamp() });
+    await loadTickets();
+  });
+
+  // ✅ Admin send reply (into messages subcollection)
+  sendReplyBtn.addEventListener('click', async () => {
+    if (!openTicketRef) return;
+    const text = replyText.value.trim();
+    if (!text) return;
+
+    try {
+      const ticketId = openTicketRef.id;
+      const messagesCol = collection(db, "tickets", ticketId, "messages");
+
+      await addDoc(messagesCol, {
+        sender: "admin",
+        text,
+        timestamp: new Date()
+      });
+
+      await updateDoc(openTicketRef, {
+        status: "pending",
+        updatedAt: serverTimestamp()
+      });
+
+      replyText.value = "";
+      await loadTickets();
+    } catch (err) {
+      console.error("Error sending reply:", err);
+      alert("Failed to send reply. Check console for details.");
+    }
+  });
+
+  refreshBtn.addEventListener('click', loadTickets);
+  statusFilter.addEventListener('change', renderTickets);
+  searchBox.addEventListener('input', renderTickets);
+
+  loadTickets();
+</script>
+
+</body>
+</html>

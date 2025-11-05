@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Store</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="landing.css" />
+
+  <style>
+    /* Grid */
+    .games-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+      gap:24px;
+      align-items:stretch;
+    }
+
+    /* Card */
+    .game-card{
+      display:flex; flex-direction:column;
+      background:#1a1a1a; border:1px solid #262626; border-radius:16px;
+      overflow:hidden; height:380px; box-shadow:0 4px 15px rgba(0,0,0,.2);
+      transition:transform .2s ease; cursor:pointer;
+    }
+    .game-card:hover{ transform:scale(1.03); }
+
+    .game-thumb{ width:100%; aspect-ratio:3/4; object-fit:cover; display:block; }
+    .game-body{ display:flex; flex-direction:column; gap:6px; padding:12px; flex:1; }
+    .game-title{
+      color:#fff; font-size:1rem; font-weight:700; line-height:1.25;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden; min-height:2.6em;
+    }
+    .game-price{ color:#ccc; font-size:.9rem; margin-top:auto; }
+    .game-actions{ display:flex; gap:8px; justify-content:center; padding:12px; border-top:1px solid #262626; }
+    .btn{ background:#333; color:#fff; border:none; padding:8px 12px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-primary{ background:#ff4757; }
+    .btn:hover{ filter:brightness(1.1); }
+
+    /* User menu (unchanged) */
+    .user-menu{ position:relative; display:none; }
+    .user-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:999px;
+      background:#1a1a1a; border:1px solid #262626; color:#e8e8e8;
+      font-size:1.4rem; cursor:pointer; transition:background .15s ease, color .15s ease;
+    }
+    .user-btn:hover{ background:#222; }
+    .user-btn.logged-in { color:#00ff00; }
+    .user-card{
+      position:absolute; top:calc(100% + 10px); right:0; min-width:280px;
+      background:#111; border:1px solid #222; border-radius:16px;
+      box-shadow:0 18px 40px rgba(0,0,0,.5); padding:12px; display:none; z-index:4000;
+    }
+    .user-menu.open .user-card{ display:block; }
+    .uc-header{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#151515; border:1px solid #222; margin-bottom:10px; }
+    .uc-avatar{ width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#28a745; color:#fff; font-weight:800; transition: background .15s ease, color .15s ease; }
+    .uc-avatar.logged-in { background:#00ff00; color:#111; }
+    .uc-ident{ line-height:1.2; }
+    .uc-name{ font-weight:800; color:#fff; }
+    .uc-points{ font-size:.85rem; color:#bdbdbd; }
+    .uc-items{ padding:6px 0; }
+    .uc-item{ width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; color:#eaeaea; background:transparent; border:none; text-decoration:none; border-radius:10px; cursor:pointer; font-weight:700; transition:background .15s ease, color .15s ease, transform .05s ease; }
+    .uc-item i{ font-size:1.1rem; }
+    .uc-item:hover{ background:#1b1b1d; color:#fff; }
+    .uc-logout{ width:100%; text-align:left; margin-top:6px; color:#ff8080; }
+    .uc-logout:hover{ background:#1b1b1d; color:#ffb3b3; }
+
+    /* tiny helper for subtitle under heading (doesn't change the heading itself) */
+    .list-subtitle { color:#bbb; text-align:center; margin:-20px 0 20px; font-size:.95rem; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Top Header / Nav (unchanged) ===== -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <a href="landing.html" class="brand"><img src="Images/logo.png" alt="Brand Logo"></a>
+
+      <form class="search" action="#" method="get">
+        <input type="text" name="q" placeholder="Search" aria-label="Search games, consoles, accessories" />
+        <button type="submit" aria-label="Search"><i class='bx bx-search'></i></button>
+      </form>
+
+      <div class="actions">
+        <a href="#" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
+
+        <a href="login.html" id="loginBtn" class="icon-btn" aria-label="Login">
+          <i class='bx bx-user'></i><span class="label">Login</span>
+        </a>
+
+        <div class="user-menu" id="userMenu">
+          <button class="user-btn" id="userBtn" aria-expanded="false" aria-haspopup="true">
+            <i class='bx bx-user-circle'></i>
+          </button>
+
+          <div class="user-dropdown user-card" id="userDropdown" role="menu">
+            <div class="uc-header">
+              <div class="uc-avatar" id="userAvatar">U</div>
+              <div class="uc-ident">
+                <div class="uc-name" id="userNameLarge">User</div>
+                <div class="uc-points" id="userPoints">0 Points</div>
+              </div>
+            </div>
+
+            <div class="uc-items">
+              <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
+              <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+              <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
+
+              <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
+            </div>
+
+            <button class="uc-item uc-logout" id="logoutBtn"><i class='bx bx-log-out'></i> Logout</button>
+          </div>
+        </div>
+
+        <a href="cart.html" class="icon-btn cart" aria-label="Cart">
+          <i class='bx bx-cart'></i><span class="count" id="cartCount">0</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Global nav unchanged -->
+    <nav class="mainnav" aria-label="Main navigation">
+      <ul>
+        <li><a href="landing.html">HOME</a></li>
+        <li class="has-sub">
+          <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="consoles.html?platform=PS">PS</a></li>
+            <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+            <li><a href="consoles.html?platform=Nintendo%20Switch">Nintendo</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">GAMES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="games.html?platform=PS5">PS5</a></li>
+            <li><a href="games.html?platform=PS4">PS4</a></li>
+            <li><a href="games.html?platform=Xbox">Xbox</a></li>
+            <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+          </ul>
+        </li>
+
+        <li class="has-sub">
+          <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=peripherals&platform=kb">Keyboards</a></li>
+            <li><a href="items.html?category=peripherals&platform=mice">Mice</a></li>
+            <li><a href="items.html?category=peripherals&platform=monitor">Monitors</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=toys&platform=LE">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=figures">Figures</a></li>
+          </ul>
+        </li>
+        <li class="has-sub">
+          <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
+          <ul class="submenu">
+            <li><a href="items.html?category=lifestyle&platform=apparel">Apparel</a></li>
+            <li><a href="items.html?category=lifestyle&platform=bag">Bags</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- === Listing Section === -->
+  <section class="games-section" style="padding: 40px;">
+    <!-- don’t touch this heading text as requested -->
+    <h2 style="font-size: 2rem; font-weight: 700; color: #ff4757; text-align: center; margin-bottom: 10px;">
+      Available Items
+    </h2>
+    <!-- safe subtitle that doesn’t modify the heading itself -->
+    <div id="listSubtitle" class="list-subtitle"></div>
+
+    <div id="gamesContainer" class="games-grid"></div>
+  </section>
+
+  <!-- === Items Listing Logic === -->
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const auth = getAuth(app);
+
+  const container  = document.getElementById("gamesContainer");
+  const subtitleEl = document.getElementById("listSubtitle");
+
+  // Read URL params (platform only is enough)
+  const params = new URLSearchParams(window.location.search);
+  const rawPlat = (params.get("platform") || "");
+
+  // Normalize platform (case-insensitive) and preserve "LE" uppercase
+  function normalizePlatform(p){
+    const low = p.toLowerCase();
+    if (["kb","keyboard","keyboards"].includes(low)) return "kb";
+    if (["mice","mouse"].includes(low)) return "mice";
+    if (["monitor","monitors"].includes(low)) return "monitor";
+    if (["figure","figures"].includes(low)) return "figures";
+    if (["apparel","clothes","clothing","tshirt","t-shirts"].includes(low)) return "apparel";
+    if (["bag","bags","backpack"].includes(low)) return "bag";
+    if (["le","limited edition","limited editions"].includes(low)) return "LE"; // preserve LE upper
+    return rawPlat || null;
+  }
+  const platform = normalizePlatform(rawPlat);
+
+  // Optional: infer a friendly category label from platform (for subtitle only)
+  const platformToCategory = {
+    kb: "Gaming Peripherals",
+    mice: "Gaming Peripherals",
+    monitor: "Gaming Peripherals",
+    LE: "Toys & Collectibles",
+    figures: "Toys & Collectibles",
+    apparel: "Lifestyle & Merchandise",
+    bag: "Lifestyle & Merchandise"
+  };
+  const friendlyCat = platform ? platformToCategory[platform] : "All Items";
+
+  if (subtitleEl){
+    subtitleEl.textContent = platform ? `Showing: ${friendlyCat} / ${platform}` : `Showing: ${friendlyCat}`;
+  }
+
+  async function loadItems(){
+    try {
+      container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
+
+      const baseRef = collection(db, "items");
+      const qRef = platform ? query(baseRef, where("platform", "==", platform)) : baseRef;
+
+      const snapshot = await getDocs(qRef);
+      container.innerHTML = "";
+
+      if (snapshot.empty){
+        container.innerHTML = `<p style="color:#ccc; text-align:center;">No items found${platform ? ` (${platform})` : ""}.</p>`;
+        return;
+      }
+
+      snapshot.forEach(docSnap => {
+        const item = docSnap.data();
+
+        const title = item.title || item.name || "Untitled Item";
+        const price = Number(item.price || item.cost || 0);
+        const image = item.image ? item.image : "https://via.placeholder.com/250x300?text=No+Image";
+
+        const card = document.createElement("div");
+        card.classList.add("game-card");
+
+        card.innerHTML = `
+          <img class="game-thumb" src="${image}" alt="${title}">
+          <div class="game-body">
+            <h3 class="game-title">${title}</h3>
+            <p class="game-price">RM ${price.toLocaleString()}</p>
+          </div>
+          <div class="game-actions">
+            <button class="btn view-btn">View</button>
+            <button class="btn btn-primary add-to-cart">Add to Cart</button>
+          </div>
+        `;
+
+        // View → item details
+        card.addEventListener("click", (e) => {
+          if (!e.target.classList.contains("add-to-cart")){
+            window.location.href = `item-details.html?id=${docSnap.id}`;
+          }
+        });
+
+        // Add to Cart (qty 1)
+        card.querySelector(".add-to-cart").addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const user = auth.currentUser;
+          if (!user){
+            alert("Please log in to add items to your cart.");
+            window.location.href = "login.html";
+            return;
+          }
+
+          const uid = user.uid;
+          const cartItemRef = doc(db, "users", uid, "cart", docSnap.id);
+          const existing = await getDoc(cartItemRef);
+
+          const itemData = {
+            title, price, image, quantity: 1, addedAt: new Date()
+          };
+
+          try{
+            if (existing.exists()){
+              await updateDoc(cartItemRef, { quantity: increment(1) });
+            }else{
+              await setDoc(cartItemRef, itemData);
+            }
+            alert("✅ Added to cart!");
+          }catch(err){
+            console.error("Add to cart failed:", err);
+            alert("❌ Failed to add item to cart.");
+          }
+        });
+
+        container.appendChild(card);
+      });
+    } catch (err){
+      console.error("Error loading items:", err);
+      container.innerHTML = `<p style="color:#f55;text-align:center;">Error loading items.</p>`;
+    }
+  }
+
+  loadItems();
+</script>
+
+
+  <!-- === Auth + user menu + points (unchanged) === -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+      authDomain: "final-year-b1cc2.firebaseapp.com",
+      projectId: "final-year-b1cc2",
+      storageBucket: "final-year-b1cc2.firebasestorage.app",
+      messagingSenderId: "537245015385",
+      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+      measurementId: "G-V6SWSF6F2D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginBtn   = document.getElementById("loginBtn");
+    const userMenu   = document.getElementById("userMenu");
+    const userBtn    = document.getElementById("userBtn");
+    const userNameLg = document.getElementById("userNameLarge");
+    const userPoints = document.getElementById("userPoints");
+    const userAvatar = document.getElementById("userAvatar");
+    const logoutBtn  = document.getElementById("logoutBtn");
+
+    function initialsFrom(nameOrEmail){
+      const base = (nameOrEmail || "User").trim();
+      const parts = base.includes("@") ? [base.split("@")[0]] : base.split(" ");
+      const letters = parts.filter(Boolean).slice(0,2).map(s => s[0].toUpperCase());
+      return letters.join('') || 'U';
+    }
+
+    function showLoggedInDisplay(name, points, email){
+      if(loginBtn) loginBtn.style.display = "none";
+      if(userMenu) userMenu.style.display = "inline-flex";
+      if(userNameLg) userNameLg.textContent = name || "User";
+      if(userPoints) userPoints.textContent = `${points || 0} Points`;
+      if(userAvatar){
+        userAvatar.textContent = initialsFrom(email || name);
+        userAvatar.classList.add('logged-in');
+      }
+      if(userBtn) userBtn.classList.add('logged-in');
+    }
+
+    function showLoggedOutDisplay(){
+      if(loginBtn) loginBtn.style.display = "inline-flex";
+      if(userMenu) userMenu.style.display = "none";
+      if(userAvatar) userAvatar.classList.remove('logged-in');
+      if(userBtn) userBtn.classList.remove('logged-in');
+    }
+
+    let name = localStorage.getItem("name");
+    let points = localStorage.getItem("points");
+    if (name) showLoggedInDisplay(name, points);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            name: user.displayName || user.email.split("@")[0],
+            email: user.email,
+            phone: "",
+            points: 0
+          });
+        }
+
+        const userData = (await getDoc(userRef)).data();
+        localStorage.setItem("name", userData.name);
+        localStorage.setItem("points", userData.points);
+        showLoggedInDisplay(userData.name, userData.points, userData.email);
+      } else {
+        localStorage.removeItem("name");
+        localStorage.removeItem("points");
+        showLoggedOutDisplay();
+      }
+    });
+
+    if (userBtn && userMenu){
+      userBtn.addEventListener("click", e=>{
+        e.stopPropagation();
+        const isOpen = userMenu.classList.toggle("open");
+        userBtn.setAttribute("aria-expanded", String(isOpen));
+      });
+      document.addEventListener("click", e=>{
+        if (!userMenu.contains(e.target)){
+          userMenu.classList.remove("open");
+          userBtn.setAttribute("aria-expanded","false");
+        }
+      });
+      document.addEventListener("keydown", e=>{
+        if (e.key === "Escape"){
+          userMenu.classList.remove("open");
+          userBtn.setAttribute("aria-expanded","false");
+        }
+      });
+    }
+
+    if (logoutBtn){
+      logoutBtn.addEventListener("click", async ()=>{
+        try { await signOut(auth); } catch {}
+        localStorage.removeItem("username");
+        localStorage.removeItem("points");
+        showLoggedOutDisplay();
+        window.location.href = "landing.html";
+      });
+    }
+  </script>
+
+  <!-- ✅ Hide cart bubble when logged out / Show when logged in -->
+  <script type="module">
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const auth = getAuth();
+    const db = getFirestore();
+    const cartCountEl = document.getElementById("cartCount");
+
+    function updateCartCount(count) {
+      if (cartCountEl) {
+        cartCountEl.textContent = count;
+        cartCountEl.style.display = count > 0 ? "inline-flex" : "none";
+      }
+      localStorage.setItem("cartCount", count);
+    }
+
+    const savedCount = localStorage.getItem("cartCount");
+    if (savedCount !== null) {
+      updateCartCount(Number(savedCount));
+    } else if (cartCountEl) {
+      cartCountEl.style.display = "none";
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const cartRef = collection(db, "users", user.uid, "cart");
+        onSnapshot(cartRef, (snapshot) => {
+          let totalQty = 0;
+          snapshot.forEach((doc) => {
+            const item = doc.data();
+            totalQty += item.quantity || 0;
+          });
+          updateCartCount(totalQty);
+        });
+      } else {
+        localStorage.removeItem("cartCount");
+        if (cartCountEl) {
+          cartCountEl.textContent = "0";
+          cartCountEl.style.display = "none";
+        }
+      }
+    });
+  </script>
+
+  <script src="landing.js?v=10"></script>
+</body>
+</html>

@@ -79,6 +79,8 @@
             <div class="uc-items">
               <a href="profile.html" class="uc-item"><i class='bx bx-id-card'></i> Profile</a>
               <a href="orders.html" class="uc-item"><i class='bx bx-package'></i> Orders</a>
+              <a href="mytickets.html" class="uc-item"><i class='bx bx-list-check'></i> My Tickets</a>
+
               <a href="tickets.html" class="uc-item"><i class='bx bx-support'></i> Need Help?</a>
             </div>
             <button class="uc-item uc-logout" id="logoutBtn"><i class='bx bx-log-out'></i> Logout</button>
@@ -93,50 +95,50 @@
 
     <!-- ===== Navigation ===== -->
     <nav class="mainnav" aria-label="Main navigation">
-      <ul>
-        <li><a href="landing.html">HOME</a></li>
-        <li class="has-sub">
-          <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
-          <ul class="submenu">
-            <li><a href="#">PS</a></li>
-            <li><a href="#">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
-          </ul>
-        </li>
-        <li class="has-sub">
-          <button class="nav-link">GAMES <i class='bx bx-chevron-down'></i></button>
-          <ul class="submenu">
-            <li><a href="#">PS5</a></li>
-            <li><a href="#">PS4</a></li>
-            <li><a href="games.html">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
-          </ul>
-        </li>
-        <li class="has-sub">
+        <ul>
+          <li><a href="landing.html">HOME</a></li>
+          <li class="has-sub">
+            <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
+            <ul class="submenu">
+              <li><a href="consoles.html?platform=PS">PS</a></li>
+    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
+            </ul>
+          </li>
+          <li class="has-sub">
+  <button class="nav-link">GAMES <i class='bx bx-chevron-down'></i></button>
+  <ul class="submenu">
+    <li><a href="games.html?platform=PS5">PS5</a></li>
+    <li><a href="games.html?platform=PS4">PS4</a></li>
+    <li><a href="games.html?platform=Xbox">Xbox</a></li>
+    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+  </ul>
+</li>
+
+          <li class="has-sub">
           <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Keyboards</a></li>
-            <li><a href="#">Mice</a></li>
-            <li><a href="#">Monitors</a></li>
+            <li><a href="items.html?category=peripherals&platform=kb">Keyboards</a></li>
+            <li><a href="items.html?category=peripherals&platform=mice">Mice</a></li>
+            <li><a href="items.html?category=peripherals&platform=monitor">Monitors</a></li>
           </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">TOYS & COLLECTIBLES <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Figures</a></li>
-            <li><a href="#">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=LE">Limited Editions</a></li>
+            <li><a href="items.html?category=toys&platform=figures">Figures</a></li>
           </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">LIFE STYLE & MERCHANDISE <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">Apparel</a></li>
-            <li><a href="#">Bags</a></li>
-            <li><a href="#">Posters</a></li>
+            <li><a href="items.html?category=lifestyle&platform=apparel">Apparel</a></li>
+            <li><a href="items.html?category=lifestyle&platform=bag">Bags</a></li>
           </ul>
         </li>
-      </ul>
-    </nav>
+        </ul>
+      </nav>
   </header>
 
   <!-- ===== Game Details Content ===== -->
@@ -355,6 +357,35 @@ if(logoutBtn){
         gameDesc.textContent  = desc;
         gameCover.src = image;
         gameCover.alt = title;
+
+        // === STOCK ENFORCEMENT ===
+const stock = Number(data.stock || 0);
+window.availableStock = stock; // expose for other scripts
+
+// Optional visual badge
+let stockBadge = document.querySelector(".game-info .stock-badge");
+if (!stockBadge) {
+  stockBadge = document.createElement("p");
+  stockBadge.className = "stock-badge";
+  stockBadge.style.color = stock > 0 ? "#9ae66e" : "#ff8080";
+  stockBadge.style.margin = "8px 0 0";
+  document.querySelector(".game-info").appendChild(stockBadge);
+}
+stockBadge.textContent = stock > 0 ? `In stock: ${stock}` : "Out of stock";
+
+// Clamp the qty input and disable add-to-cart if needed
+const qtyInputEl = document.getElementById("qty");
+const addBtnEl = document.querySelector(".add-to-cart");
+if (qtyInputEl) {
+  qtyInputEl.min = 1;
+  qtyInputEl.max = Math.max(stock, 0);
+  if (stock <= 0) qtyInputEl.value = 0;
+}
+if (addBtnEl) {
+  if (stock <= 0) addBtnEl.setAttribute("disabled", "disabled");
+  else addBtnEl.removeAttribute("disabled");
+}
+
       } else {
         gameTitle.textContent = "Game not found";
         gameDesc.textContent = "This game may have been removed or does not exist.";
@@ -369,26 +400,29 @@ if(logoutBtn){
   loadGameDetails();
 </script>
 
-<!-- 🛒 Add to Cart Functionality -->
+<!-- 🛒 Add to Cart Functionality (with stock guard) -->
 <script type="module">
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Reuse Firebase app already initialized above
   const auth = getAuth();
   const db = getFirestore();
 
   const addToCartBtn = document.querySelector(".add-to-cart");
   const qtyInput = document.getElementById("qty");
 
-  // Get game info from page
   const gameTitle = document.querySelector(".game-info h2");
   const gamePrice = document.querySelector(".game-info .price");
   const gameCover = document.querySelector(".game-cover img");
 
+  async function getAvailableStock(gameId){
+    const ref = doc(db, "games", gameId);
+    const snap = await getDoc(ref);
+    return Number((snap.data()?.stock) ?? 0);
+  }
+
   addToCartBtn.addEventListener("click", async () => {
     const user = auth.currentUser;
-
     if (!user) {
       alert("Please log in to add items to your cart.");
       window.location.href = "#";
@@ -397,28 +431,49 @@ if(logoutBtn){
 
     const uid = user.uid;
     const gameId = new URLSearchParams(window.location.search).get("id");
-    const quantity = parseInt(qtyInput.value) || 1;
+    const requestedQty = Math.max(parseInt(qtyInput.value || "1", 10), 1);
 
-    // Prepare cart item data
+    // 1) Re-read latest stock from DB
+    const stock = await getAvailableStock(gameId);
+    if (stock <= 0) {
+      alert("❌ Out of stock.");
+      return;
+    }
+
+    // 2) How many already in cart
+    const cartItemRef = doc(db, "users", uid, "cart", gameId);
+    const existingSnap = await getDoc(cartItemRef);
+    const existingQty = existingSnap.exists() ? Number(existingSnap.data().quantity || 0) : 0;
+
+    // 3) Remaining you can add
+    const remaining = stock - existingQty;
+    if (remaining <= 0) {
+      alert("❌ You already have the maximum available quantity of this item in your cart.");
+      qtyInput.value = 1;
+      return;
+    }
+
+    if (requestedQty > remaining) {
+      alert(`⚠️ Only ${remaining} left in stock. Quantity adjusted.`);
+      qtyInput.value = remaining;
+    }
+
+    const finalQtyToAdd = Math.min(requestedQty, remaining);
+
+    // Prepare the cart item
     const itemData = {
       title: gameTitle.textContent,
       price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
       image: gameCover.src,
-      quantity: quantity,
+      quantity: finalQtyToAdd,
       addedAt: new Date()
+      
     };
-
-    const cartItemRef = doc(db, "users", uid, "cart", gameId);
-    const existingSnap = await getDoc(cartItemRef);
 
     try {
       if (existingSnap.exists()) {
-        // Update quantity if item already exists
-        await updateDoc(cartItemRef, {
-          quantity: increment(quantity)
-        });
+        await updateDoc(cartItemRef, { quantity: increment(finalQtyToAdd) });
       } else {
-        // Create new cart item
         await setDoc(cartItemRef, itemData);
       }
       alert("✅ Added to cart!");
@@ -428,6 +483,7 @@ if(logoutBtn){
     }
   });
 </script>
+
 
 <!-- Firebase + user menu + points -->
 <script type="module">
@@ -487,15 +543,34 @@ if(logoutBtn){
   const plusBtn = document.querySelector(".qty-btn.plus");
   const minusBtn = document.querySelector(".qty-btn.minus");
 
+  function getMaxStock() {
+    const maxAttr = Number(qtyInput?.max || 0);
+    const globalStock = Number(window.availableStock || 0);
+    return Math.max(maxAttr, globalStock, 0);
+  }
+
   plusBtn.addEventListener("click", () => {
-    qtyInput.value = parseInt(qtyInput.value || 1) + 1;
+    const max = getMaxStock();
+    const current = Math.max(parseInt(qtyInput.value || "1", 10), 1);
+    const next = max > 0 ? Math.min(current + 1, max) : current;
+    qtyInput.value = next;
   });
 
   minusBtn.addEventListener("click", () => {
-    const current = parseInt(qtyInput.value || 1);
-    if (current > 1) qtyInput.value = current - 1;
+    const current = Math.max(parseInt(qtyInput.value || "1", 10), 1);
+    qtyInput.value = Math.max(current - 1, 1);
+  });
+
+  // Clamp manual typing on blur
+  qtyInput.addEventListener("blur", () => {
+    const max = getMaxStock() || 1;
+    let val = parseInt(qtyInput.value || "1", 10);
+    if (!Number.isFinite(val) || val < 1) val = 1;
+    if (val > max) val = max;
+    qtyInput.value = val;
   });
 </script>
+
 
 <script src="landing.js?v=10"></script>
 </body>

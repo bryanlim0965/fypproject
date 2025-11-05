@@ -184,6 +184,13 @@
   }
   .checkout-left::-webkit-scrollbar-thumb:hover { background-color: #00e070; }
   .checkout-left { scrollbar-width: thin; scrollbar-color: #00ff80 #0b0b0b; }
+
+  /* visually gray out disabled options so users know they can't pick them */
+select option[disabled] {
+  color: #777;
+  background: #111;
+}
+
   </style>
 </head>
 <body>
@@ -228,8 +235,9 @@
         <div class="checkout-section readonly-style">
           <h3>Delivery Options</h3>
           <select id="deliveryOption">
-            <option value="self">Self Pickup (Free)</option>
+            <option value="self">Self Collect in Store (Free)</option>
             <option value="shipping">Shipping (+RM5)</option>
+            <option value="shipping_ss">Shipping (Sabah / Sarawak) (+RM10)</option>
           </select>
         </div>
 
@@ -325,6 +333,83 @@ const CLOUDINARY_PRESET = "payment_receipts";
   const cityEl = document.getElementById("city");
   const postcodeEl = document.getElementById("postcode");
   const editAddressBtn = document.getElementById("editAddressBtn");
+  const phoneEl = document.getElementById("phone");
+
+  // -----------------------------
+// Disable RM5 for Sabah / Sarawak
+// -----------------------------
+// -----------------------------
+// Disable RM5 for Sabah / Sarawak
+// -----------------------------
+function updateDeliveryOptionsForState(state) {
+  const rm5Option = Array.from(deliveryOption.options).find(opt => opt.value === "shipping");
+  const rm10Option = Array.from(deliveryOption.options).find(opt => opt.value === "shipping_ss");
+  const selfOption = Array.from(deliveryOption.options).find(opt => opt.value === "self");
+
+  if (!rm5Option || !rm10Option || !selfOption) return;
+
+  // ✅ Default selection — always start as "Self Collect"
+  if (!deliveryOption.value || deliveryOption.value === "") {
+    deliveryOption.value = "self";
+  }
+
+  if (state === "Sabah" || state === "Sarawak") {
+    // Disable RM5, enable RM10
+    rm5Option.disabled = true;
+    rm5Option.style.color = "#777";
+    rm5Option.style.background = "#111";
+
+    rm10Option.disabled = false;
+    rm10Option.style.color = "";
+    rm10Option.style.background = "";
+
+    // Auto-switch if RM5 was selected
+    if (deliveryOption.value === "shipping") {
+      deliveryOption.value = "shipping_ss";
+    }
+
+    deliveryOption.style.borderColor = "#ff8080";
+  } else {
+    // Enable RM5, disable RM10
+    rm5Option.disabled = false;
+    rm5Option.style.color = "";
+    rm5Option.style.background = "";
+
+    rm10Option.disabled = true;
+    rm10Option.style.color = "#777";
+    rm10Option.style.background = "#111";
+
+    // Auto-switch if RM10 was selected
+    if (deliveryOption.value === "shipping_ss") {
+      deliveryOption.value = "shipping";
+    }
+
+    deliveryOption.style.borderColor = "";
+  }
+
+  updateTotals(); // refresh totals
+}
+
+
+
+// When state select changes, update delivery options
+cityEl.addEventListener("change", () => {
+  updateDeliveryOptionsForState(cityEl.value);
+});
+
+// Call on load (in case shippingInfo contains Sabah/Sarawak)
+async function safeInitDeliveryForUserState() {
+  // If cityEl already has a value (loaded from Firestore), use it
+  if (cityEl && cityEl.value) {
+    updateDeliveryOptionsForState(cityEl.value);
+  }
+}
+// call it after loadShippingInfo completes — you already call loadShippingInfo(user.uid) in auth listener
+// but to be safe, call here as well:
+safeInitDeliveryForUserState();
+
+// Also call update after editing address is saved in editAddressBtn logic (after setDoc)
+
 
   let cartItems = [];
   let subtotal = 0, discount = 0, deliveryFee = 0, grandTotal = 0, pointsEarned = 0;
@@ -348,30 +433,38 @@ const CLOUDINARY_PRESET = "payment_receipts";
     });
 
     if (!isEditing) {
-      // Save updated info to Firestore
-      const userDocRef = doc(db, "users", currentUser.uid, "profile", "shippingInfo");
-      await setDoc(userDocRef, {
-        address1: address1El.value,
-        city: cityEl.value,
-        postcode: postcodeEl.value,
-        country: "Malaysia"
-      }, { merge: true });
-      alert("Shipping info updated successfully!");
-    }
+  // Save updated info to Firestore
+  const userDocRef = doc(db, "users", currentUser.uid, "profile", "shippingInfo");
+  await setDoc(userDocRef, {
+    address1: address1El.value,
+    city: cityEl.value,
+    postcode: postcodeEl.value,
+    country: "Malaysia"
+  }, { merge: true });
+  alert("Shipping info updated successfully!");
+
+  // update delivery options right away so UI matches saved state
+  updateDeliveryOptionsForState(cityEl.value);
+}
+
   });
 
   // === Load shipping info from Firestore ===
   async function loadShippingInfo(uid) {
-    const ref = doc(db, "users", uid, "profile", "shippingInfo");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      address1El.value = data.address1 || "";
-      cityEl.value = data.city || "";
-      postcodeEl.value = data.postcode || "";
-      document.getElementById("country").value = data.country || "Malaysia";
-    }
+  const ref = doc(db, "users", uid, "profile", "shippingInfo");
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = snap.data();
+    address1El.value = data.address1 || "";
+    cityEl.value = data.city || "";
+    postcodeEl.value = data.postcode || "";
+    document.getElementById("country").value = data.country || "Malaysia";
   }
+
+  // IMPORTANT: update delivery options after we've populated the state
+  updateDeliveryOptionsForState(cityEl.value);
+}
+
 
   // === Load cart ===
   async function renderCart(uid) {
@@ -408,16 +501,24 @@ const CLOUDINARY_PRESET = "payment_receipts";
   }
 
   function updateTotals() {
-    deliveryFee = deliveryOption.value === "shipping" ? 5 : 0;
-    grandTotal = subtotal + deliveryFee - discount;
-    pointsEarned = Math.floor(subtotal);
-
-    subtotalEl.textContent = formatCurrency(subtotal);
-    deliveryFeeEl.textContent = formatCurrency(deliveryFee);
-    discountTotalEl.textContent = formatCurrency(discount);
-    grandTotalEl.textContent = formatCurrency(grandTotal);
-    pointsInfo.textContent = `Points to earn: ${pointsEarned}`;
+  if (deliveryOption.value === "shipping") {
+    deliveryFee = 5;
+  } else if (deliveryOption.value === "shipping_ss") {
+    deliveryFee = 10;
+  } else {
+    deliveryFee = 0;
   }
+
+  grandTotal = subtotal + deliveryFee - discount;
+  pointsEarned = Math.floor(subtotal);
+
+  subtotalEl.textContent = formatCurrency(subtotal);
+  deliveryFeeEl.textContent = formatCurrency(deliveryFee);
+  discountTotalEl.textContent = formatCurrency(discount);
+  grandTotalEl.textContent = formatCurrency(grandTotal);
+  pointsInfo.textContent = `Points to earn: ${pointsEarned}`;
+}
+
 
   deliveryOption.addEventListener("change", updateTotals);
 
@@ -434,19 +535,35 @@ const CLOUDINARY_PRESET = "payment_receipts";
   });
 
   // === Auth listener ===
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      document.getElementById("fullName").value = user.displayName || user.email.split("@")[0];
-      document.getElementById("email").value = user.email;
-      document.getElementById("phone").value = user.phoneNumber || "";
-      await loadShippingInfo(user.uid);
-      await renderCart(user.uid);
-    } else {
-      checkoutCartContainer.innerHTML = "<p>Please log in to continue.</p>";
-      placeOrderBtn.disabled = true;
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById("fullName").value = user.displayName || user.email.split("@")[0];
+    document.getElementById("email").value = user.email;
+
+    // 🔹 Load phone from Firestore if available
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        phoneEl.value = data.phone || user.phoneNumber || "Not provided";
+      } else {
+        phoneEl.value = user.phoneNumber || "Not provided";
+      }
+    } catch (e) {
+      console.error("Error loading phone:", e);
+      phoneEl.value = "Not provided";
     }
-  });
+
+    await loadShippingInfo(user.uid);
+    await renderCart(user.uid);
+  } else {
+    checkoutCartContainer.innerHTML = "<p>Please log in to continue.</p>";
+    placeOrderBtn.disabled = true;
+  }
+});
+
 
 
 // === Place order ===

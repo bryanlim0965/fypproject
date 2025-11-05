@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Item Management</title>
+  <link rel="stylesheet" href="admin.css">
+  <style>
+  /* Limit cell width and show ellipsis */
+  #itemsTable td {
+    max-width: 300px;      /* adjust width as you want */
+    white-space: nowrap;   /* keep text on one line */
+    overflow: hidden;      /* hide overflow text */
+    text-overflow: ellipsis; /* add ... */
+    vertical-align: middle;
+  }
+
+  /* Optional: make description narrower */
+  #itemsTable td:nth-child(2) {
+    max-width: 220px; /* Description column only */
+  }
+</style>
+
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body class="game-page">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin.html"><i class='bx bxs-dashboard'></i> Dashboard</a>
+    <a href="admingame.html"><i class='bx bxs-game'></i> Game Management</a>
+    <a href="adminitems.html" class="active"><i class='bx bxs-package'></i> Item Management</a>
+    <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
+    <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
+
+    <!-- Logout Button -->
+    <div class="logout-section">
+      <a href="login.html" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Item Management</h1>
+
+    <section class="game-form-section">
+      <h2>Add / Edit Item</h2>
+      <form id="itemForm">
+        <input type="hidden" id="itemId" value="">
+        <input type="hidden" id="itemSrc" value="items">
+        <input type="text" id="itemName" placeholder="Item Name" required>
+        <textarea id="itemDesc" placeholder="Description" required></textarea>
+
+        <label for="itemPlatform">Platform:</label>
+        <select id="itemPlatform" required>
+          <option value="" disabled selected>Select Platform</option>
+          <!-- Consoles -->
+          <option value="PS5">PS5</option>
+          <option value="PS4">PS4</option>
+          <option value="Xbox">Xbox</option>
+          <option value="Nintendo Switch">Nintendo Switch</option>
+          <!-- Peripherals -->
+          <option value="kb">kb</option>
+          <option value="mice">mice</option>
+          <option value="monitor">monitor</option>
+          <!-- Toys & Collectibles -->
+          <option value="LE">LE</option>
+          <option value="figures">figures</option>
+          <!-- Lifestyle & Merchandise -->
+          <option value="apparel">apparel</option>
+          <option value="bag">bag</option>
+        </select>
+
+        <input type="number" id="itemPrice" placeholder="Price" min="0" step="0.01" required>
+        <input type="number" id="itemStock" placeholder="Stock Quantity" min="0" required>
+
+        <!-- Image Upload -->
+        <label for="itemImage">Upload Item Image:</label>
+        <input type="file" id="itemImage" accept="image/*">
+        <p id="uploadStatusItem" style="font-size: 0.9em; color: gray;"></p>
+
+        <button type="submit" class="btn">Save Item</button>
+        <button type="button" id="clearItemForm" class="btn secondary">Clear</button>
+      </form>
+    </section>
+
+    <section class="game-list-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <h2 style="margin: 0;">Existing Items</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="itemSearch" placeholder="Search by name..." style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
+          <select id="itemPlatformFilter" style="padding:6px 12px; border-radius:6px; border:1px solid #ccc;">
+            <option value="">All Platforms</option>
+            <!-- Consoles -->
+            <option value="PS5">PS5</option>
+            <option value="PS4">PS4</option>
+            <option value="Xbox">Xbox</option>
+            <option value="Nintendo">Nintendo</option>
+            <!-- Peripherals -->
+            <option value="kb">kb</option>
+            <option value="mice">mice</option>
+            <option value="monitor">monitor</option>
+            <!-- Toys & Collectibles -->
+            <option value="LE">LE</option>
+            <option value="figures">figures</option>
+            <!-- Lifestyle & Merchandise -->
+            <option value="apparel">apparel</option>
+            <option value="bag">bag</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="height: 400px; overflow-y: auto;">
+        <table id="itemsTable" style="width:100%;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Platform</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Image</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Items will be listed here -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+  authDomain: "final-year-b1cc2.firebaseapp.com",
+  projectId: "final-year-b1cc2",
+  storageBucket: "final-year-b1cc2.firebasestorage.app",
+  messagingSenderId: "537245015385",
+  appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+  measurementId: "G-V6SWSF6F2D"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// Collections
+const itemsRef    = collection(db, "items");
+const consolesRef = collection(db, "consoles");
+
+// Form + UI
+const itemForm       = document.getElementById("itemForm");
+const itemIdInput    = document.getElementById("itemId");
+const itemSrcInput   = document.getElementById("itemSrc"); // NEW
+const nameInput      = document.getElementById("itemName");
+const descInput      = document.getElementById("itemDesc");
+const platformInput  = document.getElementById("itemPlatform");
+const priceInput     = document.getElementById("itemPrice");
+const stockInput     = document.getElementById("itemStock");
+const imageInput     = document.getElementById("itemImage");
+const uploadStatus   = document.getElementById("uploadStatusItem");
+const itemsTableBody = document.querySelector("#itemsTable tbody");
+const clearBtn       = document.getElementById("clearItemForm");
+const platformFilter = document.getElementById("itemPlatformFilter");
+const itemSearch     = document.getElementById("itemSearch");
+
+const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dqgvby5lb/image/upload";
+const CLOUDINARY_PRESET = "game_images";
+
+// Unified rows
+let mergedRows = [];
+
+async function loadItems() {
+  itemsTableBody.innerHTML = "";
+  const [itemsSnap, consolesSnap] = await Promise.all([
+    getDocs(itemsRef),
+    getDocs(consolesRef),
+  ]);
+
+  const fromItems = itemsSnap.docs.map(d => ({
+    _id: d.id, _src: "items",
+    name: (d.data().name || d.data().title || d.data().itemName || "").trim(),
+    description: (d.data().description || d.data().desc || "").trim(),
+    platform: (d.data().platform || "").trim(),
+    price: Number(d.data().price || 0),
+    stock: Number(d.data().stock || 0),
+    image: d.data().image || ""
+  }));
+
+ function normalizeConsolePlatform(p, name){
+  const plat = (p||"").toLowerCase();
+  const n = (name||"").toLowerCase();
+
+  // 🔹 Detect PS4 / PS5 from PScon or PlayStation tags
+  if (plat.includes("pscon") || plat.includes("playstation") || plat === "ps") {
+    if (n.includes("ps5")) return "PS5";
+    if (n.includes("ps4")) return "PS4";
+    return "PS"; // fallback
+  }
+  if (plat.includes("nintendo")) return "Nintendo";
+  if (plat.includes("xbox")) return "Xbox";
+  return p || "";
+}
+
+const fromConsoles = consolesSnap.docs.map(d => {
+  const raw = d.data();
+  return {
+    _id: d.id, _src: "consoles",
+    name: (raw.name || "").trim(),
+    description: (raw.description || "").trim(),
+    platform: normalizeConsolePlatform(raw.platform, raw.name),
+    price: Number(raw.price || 0),
+    stock: Number(raw.stock || 0),
+    image: raw.image || ""
+  };
+});
+
+
+  mergedRows = [...fromItems, ...fromConsoles];
+  displayItems();
+}
+
+function displayItems() {
+  const term = (itemSearch.value || "").toLowerCase().trim();
+  const plat = (platformFilter.value || "").toLowerCase().trim();
+
+  itemsTableBody.innerHTML = "";
+
+  mergedRows.forEach(row => {
+    const nameSafe = (row.name || "").toLowerCase();
+    const descSafe = (row.description || "").toLowerCase();
+    const platSafe = (row.platform || "").toLowerCase();
+
+    // platform filter (substring so "nintendo" matches "nintendo switch")
+    const matchesPlatform = !plat || platSafe.includes(plat);
+
+    const matchesSearch =
+      !term || nameSafe.includes(term) || descSafe.includes(term);
+
+    if (matchesPlatform && matchesSearch) {
+      const priceNum = Number(row.price || 0);
+      const stockNum = Number.isFinite(Number(row.stock)) ? Number(row.stock) : 0;
+      const imgCell  = row.image
+        ? `<img src="${row.image}" width="50" height="50" style="object-fit:cover;border-radius:5px;">`
+        : "No Image";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td title="${row.name}">${row.name || "(Untitled)"}</td>
+        <td title="${row.description}">${row.description || ""}</td>
+        <td>${row.platform || ""}</td>
+        <td>RM ${priceNum.toFixed(2)}</td>
+        <td>${stockNum}</td>
+        <td>${imgCell}</td>
+        <td>
+          <button class="edit-btn" data-id="${row._id}" data-src="${row._src}">Edit</button>
+          <button class="delete-btn" data-id="${row._id}" data-src="${row._src}">Delete</button>
+        </td>
+      `;
+      itemsTableBody.appendChild(tr);
+    }
+  });
+}
+
+// Create / Update
+itemForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const itemId  = itemIdInput.value.trim();
+  const srcHint = itemSrcInput.value || "items"; // items|consoles for updates
+
+  const payload = {
+    name: nameInput.value,
+    description: descInput.value,
+    platform: platformInput.value,
+    price: parseFloat(priceInput.value),
+    stock: parseInt(stockInput.value),
+  };
+
+  // Upload image if any
+  if (imageInput.files.length > 0) {
+    const file = imageInput.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_PRESET);
+    uploadStatus.textContent = "Uploading image...";
+    try {
+      const res  = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+      const data = await res.json();
+      payload.image = data.secure_url;
+      uploadStatus.textContent = "✅ Image uploaded successfully!";
+    } catch {
+      uploadStatus.textContent = "❌ Image upload failed.";
+    }
+  }
+
+  const isConsolePlat = ["ps5","ps4","xbox","nintendo switch"].includes(payload.platform.toLowerCase());
+  const targetCol = itemId ? srcHint : (isConsolePlat ? "consoles" : "items");
+
+  try {
+    if (itemId) {
+      await updateDoc(doc(db, targetCol, itemId), payload);
+      alert("✅ Item updated!");
+    } else {
+      await addDoc(collection(db, targetCol), payload);
+      alert("✅ Item added!");
+    }
+    itemForm.reset();
+    itemIdInput.value = "";
+    itemSrcInput.value = "items";
+    uploadStatus.textContent = "";
+    loadItems();
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error saving item!");
+  }
+});
+
+clearBtn.addEventListener("click", () => {
+  itemForm.reset();
+  uploadStatus.textContent = "";
+  itemIdInput.value = "";
+  itemSrcInput.value = "items";
+});
+
+// Edit / Delete with correct source
+itemsTableBody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const id  = btn.dataset.id;
+  const src = btn.dataset.src || "items";
+
+  if (btn.classList.contains("edit-btn")) {
+    const snap = await getDoc(doc(db, src, id));
+    if (snap.exists()) {
+      const d = snap.data();
+      itemIdInput.value  = id;
+      itemSrcInput.value = src; // remember source for update
+      nameInput.value    = d.name || d.title || "";
+      descInput.value    = d.description || d.desc || "";
+      platformInput.value= d.platform || "";
+      priceInput.value   = d.price || 0;
+      stockInput.value   = d.stock || 0;
+      uploadStatus.textContent = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  } else if (btn.classList.contains("delete-btn")) {
+    if (confirm("Are you sure you want to delete this item?")) {
+      await deleteDoc(doc(db, src, id));
+      loadItems();
+    }
+  }
+});
+
+platformFilter.addEventListener("change", displayItems);
+itemSearch.addEventListener("input", displayItems);
+
+// init
+loadItems();
+</script>
+
+</body>
+</html>
