@@ -153,7 +153,6 @@
   }
 
   function renderDocToElement(data){
-    // try different property names for text and timestamp and sender
     const text = data.text ?? data.message ?? data.msg ?? "";
     const sender = (data.sender ?? data.from ?? "").toString().toLowerCase();
     const tsField = data.timestamp ?? data.createdAt ?? data.time ?? null;
@@ -196,13 +195,11 @@
   }
 
   async function attachMessagesListener(ticketId){
-    // detach previous
+
     if (typeof unsub === "function") { unsub(); unsub = null; }
 
     const msgsRef = collection(db, "tickets", ticketId, "messages");
 
-    // Prefer to order by `timestamp` first, but try `createdAt` if needed.
-    // We'll attempt onSnapshot(orderBy('timestamp')) and fallback to createdAt; if both fail, use getDocs and client sort.
     try {
       const q = query(msgsRef, orderBy("timestamp", "asc"));
       unsub = onSnapshot(q, snap => {
@@ -300,7 +297,7 @@
           timestamp: serverTimestamp(),   // consistent timestamp field
           createdAt: serverTimestamp()    // also useful if you used createdAt elsewhere
         });
-        // If realtime worked you'll see it appear; clear input optimistically
+   
         msgInput.value = "";
       } catch (err) {
         console.error("Error sending message:", err);

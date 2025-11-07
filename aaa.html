@@ -161,55 +161,123 @@
     </nav>
   </header>
 
-  <section class="banner-slider" aria-label="Promotional banners">
-  <div class="viewport">
-    <div class="slides" id="bannerSlides"></div>
-  </div>
-  <button class="prev">&#10094;</button>
-  <button class="next">&#10095;</button>
-</section>
-
-  <div class="banner-dots" id="bannerDots"></div> 
-
-
-  <section class="info-strip">
+  <!-- ===== Redeem Page Content ===== -->
+<section class="redeem-page">
   <div class="container">
-    <div class="info-col">
-      <h3>CHECK US OUT</h3>
-      <ul class="link-list">
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="contact.html">Contact Us</a></li>
-        <li><a href="faq.html">FAQ</a></li>
-      </ul>
-    </div>
+    <h2 class="redeem-title">Redeem Your Points</h2>
+    <p class="redeem-subtitle">Use your points to get awesome rewards!</p>
 
-    <div class="info-col">
-      <h3>SOCIAL MEDIA</h3>
-      <div class="social-icons">
-        <a href="https://instagram.com/" target="_blank"><i class='bx bxl-instagram'></i></a>
-        <a href="https://facebook.com/" target="_blank"><i class='bx bxl-facebook'></i></a>
+    <div class="redeem-items">
+      <div class="redeem-card">
+        <img src="Images/giftcard.png" alt="Gift Card">
+        <h3>Gift Card - RM10</h3>
+        <p>100 Points</p>
+        <button class="redeem-btn" data-points="100">Redeem</button>
+      </div>
+
+      <div class="redeem-card">
+        <img src="Images/gamevoucher.png" alt="Game Voucher">
+        <h3>Game Voucher</h3>
+        <p>250 Points</p>
+        <button class="redeem-btn" data-points="250">Redeem</button>
+      </div>
+
+      <div class="redeem-card">
+        <img src="Images/merch.png" alt="Merchandise">
+        <h3>Merchandise</h3>
+        <p>500 Points</p>
+        <button class="redeem-btn" data-points="500">Redeem</button>
       </div>
     </div>
 
-    <div class="info-col">
-      <h3>STORE LOCATION</h3>
-      <a class="store-card" href="https://maps.google.com/?q=Impulse+Gaming" target="_blank">
-        <img src="Images/store.jpg" alt="Storefront photo" />
-        <div class="store-meta">
-          <div class="store-title">RavStore (PENANG)</div>
-          <div class="store-actions">
-            <a class="call" href="tel:+60164469222"><i class='bx bx-phone'></i> +6014-446 9222</a>
-            <span class="pin"><i class='bx bx-map-pin'></i></span>
-          </div>
-        </div>
-      </a>
-    </div>
+    <p id="redeem-message"></p>
   </div>
 </section>
 
-<footer class="mini-foot">
-  Copyright © 2025 RavStore. All rights reserved.
-</footer>
+<style>
+.redeem-page {
+  padding: 3rem 1rem;
+  background: #0f0f0f;
+  color: #eee;
+  text-align: center;
+}
+
+.redeem-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.redeem-subtitle {
+  font-size: 1.1rem;
+  color: #aaa;
+  margin-bottom: 2rem;
+}
+
+.redeem-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.redeem-card {
+  background: #1a1a1a;
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  width: 250px;
+  text-align: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.redeem-card:hover {
+  transform: translateY(-5px);
+  background: #222;
+}
+
+.redeem-card img {
+  width: 100px;
+  margin-bottom: 1rem;
+}
+
+.redeem-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.redeem-card p {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #bdbdbd;
+}
+
+.redeem-card button {
+  background: #00ff00;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.redeem-card button:hover {
+  background: #0f0;
+}
+
+#redeem-message {
+  margin-top: 1.5rem;
+  font-weight: 700;
+  color: limegreen;
+}
+</style>
+
+
+
+
+  
+
 
 
 

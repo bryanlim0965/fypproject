@@ -150,13 +150,17 @@
       <div class="topbar-row">
         <a href="landing.html" class="brand"><img src="Images/logo.png" alt="Brand Logo"></a>
 
-        <form class="search" action="#" method="get">
-          <input type="text" name="q" placeholder="Search" aria-label="Search games, consoles, accessories" />
-          <button type="submit" aria-label="Search"><i class='bx bx-search'></i></button>
-        </form>
+        <div class="search-container" style="position: relative; width: 500px;"> <!-- increase width here -->
+  <input type="text" id="searchBox" placeholder="Search games..." autocomplete="off"
+         style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"> <!-- use 100% for full container width -->
+  <div id="results"
+       style="position: absolute; background: white; border: 1px solid #ccc; width: 100%; display: none;
+              max-height: 200px; overflow-y: auto; border-radius: 4px; z-index: 1000;">
+  </div>
+</div>
 
         <div class="actions">
-          <a href="#" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
+          <a href="redeem.html" class="redeem"><i class='bx bxs-hot'></i> <span>REDEEM</span></a>
 
           <!-- Login pill -->
           <a href="login.html" id="loginBtn" class="icon-btn" aria-label="Login">
@@ -312,7 +316,6 @@ else if (categoryParam === "lifestyle") collectionName = "lifestyle";
     try {
       container.innerHTML = `<p style="color:#bbb;text-align:center;">Loading…</p>`;
 
-      // Build the query: filter when platform is specified; otherwise get all.
       let qRef;
       if (platform) {
         qRef = query(collection(db, "games"), where("platform", "==", platform));
@@ -342,16 +345,16 @@ else if (categoryParam === "lifestyle") collectionName = "lifestyle";
         card.classList.add("game-card");
         card.classList.add("game-card");
 
-card.innerHTML = `
-  <img class="game-thumb" src="${image}" alt="${title}">
-  <div class="game-body">
-    <h3 class="game-title">${title}</h3>
-    <p class="game-price">RM ${price.toLocaleString()}</p>
-  </div>
-  <div class="game-actions">
-    <button class="btn view-btn">View</button>
-    <button class="btn btn-primary add-to-cart">Add to Cart</button>
-  </div>
+        card.innerHTML = `
+        <img class="game-thumb" src="${image}" alt="${title}">
+        <div class="game-body">
+        <h3 class="game-title">${title}</h3>
+        <p class="game-price">RM ${price.toLocaleString()}</p>
+    </div>
+    <div class="game-actions">
+        <button class="btn view-btn">View</button>
+        <button class="btn btn-primary add-to-cart">Add to Cart</button>
+    </div>
 `;
 
 

@@ -18,13 +18,16 @@
       </div>
 
       <div class="input-box">
-        <input type="password" id="loginPassword" placeholder="Password" required>
-        <i class='bx bxs-lock-alt'></i>
-      </div>
+  <input type="password" id="loginPassword" placeholder="Password" required>
+  <i class='bx bxs-lock-alt'></i>
+  <i class='bx bx-hide' id="togglePassword"></i>
+</div>
+
+
+
 
       <div class="remember-forgot">
-        <label><input type="checkbox"> Remember me</label>
-        <a href="#">Forgot password?</a>
+        <label id="forgotpasslabel">Forgot password?</label>
       </div>
 
       <button type="submit" class="btn">Login</button>
@@ -37,90 +40,150 @@
 
   <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
-      authDomain: "final-year-b1cc2.firebaseapp.com",
-      projectId: "final-year-b1cc2",
-      storageBucket: "final-year-b1cc2.firebasestorage.app",
-      messagingSenderId: "537245015385",
-      appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
-      measurementId: "G-V6SWSF6F2D"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
+    authDomain: "final-year-b1cc2.firebaseapp.com",
+    projectId: "final-year-b1cc2",
+    storageBucket: "final-year-b1cc2.firebasestorage.app",
+    messagingSenderId: "537245015385",
+    appId: "1:537245015385:web:ab79c9ec5e2a74cc924048",
+    measurementId: "G-V6SWSF6F2D"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
 
-    const loginForm = document.getElementById("loginForm");
+  const loginForm      = document.getElementById("loginForm");
+  const idInput        = document.getElementById("loginIdentifier");
+  const passInput      = document.getElementById("loginPassword");
+  const forgotLabel    = document.getElementById("forgotpasslabel");
+  if (forgotLabel) forgotLabel.style.cursor = "pointer";
 
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  // Helper: resolve username OR email into a valid email
+  async function resolveEmail(identifier) {
+    if (!identifier) return null;
+    if (identifier.includes("@")) return identifier; // already an email
 
-      const identifier = document.getElementById("loginIdentifier").value.trim();
-      const password = document.getElementById("loginPassword").value.trim();
-      let emailToUse = identifier;
-      let username = identifier;
+    // lookup by username -> email
+    const usersRef = collection(db, "users");
+    const q1 = query(usersRef, where("username", "==", identifier));
+    const qs1 = await getDocs(q1);
+    if (qs1.empty) return null;
 
-      try {
-        // If identifier is a username, fetch corresponding email and role
-        let role = "user"; // default role
+    // Assume first match
+    const data = qs1.docs[0].data();
+    return data?.email || null;
+  }
 
-        if (!identifier.includes("@")) {
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("username", "==", identifier));
-          const querySnapshot = await getDocs(q);
+  // ===== Login submit =====
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-          if (querySnapshot.empty) {
-            alert("❌ Username not found!");
-            return;
-          }
+    const identifier = idInput.value.trim();
+    const password   = passInput.value.trim();
 
-          querySnapshot.forEach(doc => {
-            const data = doc.data();
-            emailToUse = data.email;
-            username = data.username;
-            role = data.role || "user";
-          });
-        } else {
-          // If identifier is email, fetch user by email to get username and role
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", identifier));
-          const querySnapshot = await getDocs(q);
+    let emailToUse = identifier;
+    let username   = identifier;
+    let role       = "user";
 
-          if (!querySnapshot.empty) {
-            querySnapshot.forEach(doc => {
-              const data = doc.data();
-              username = data.username;
-              role = data.role || "user";
-            });
-          }
+    try {
+      if (!identifier.includes("@")) {
+        // identifier is username -> find email + role
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", identifier));
+        const snap = await getDocs(q);
+        if (snap.empty) { alert("❌ Username not found!"); return; }
+        const data = snap.docs[0].data();
+        emailToUse = data.email;
+        username   = data.username;
+        role       = data.role || "user";
+      } else {
+        // identifier is email -> try to find username + role (optional)
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", identifier));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          username = data.username || identifier;
+          role     = data.role || "user";
         }
-
-        // Sign in with email/password
-        const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
-
-        // Save username in localStorage for session persistence
-        localStorage.setItem("username", username);
-
-        alert("✅ Login successful!");
-        console.log("User:", userCredential.user, "Role:", role);
-
-        // Redirect based on role
-        if (role === "admin") {
-          window.location.href = "admin.html";
-        } else {
-          window.location.href = "landing.html";
-        }
-
-      } catch (error) {
-        alert("❌ Error: " + error.message);
-        console.error(error);
       }
-    });
-  </script>
+
+      const cred = await signInWithEmailAndPassword(auth, emailToUse, password);
+      localStorage.setItem("username", username);
+
+      alert("✅ Login successful!");
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "landing.html";
+      }
+    } catch (err) {
+      alert("❌ Error: " + err.message);
+      console.error(err);
+    }
+  });
+
+  // ===== Forgot password click =====
+  forgotLabel?.addEventListener("click", async () => {
+    const identifier = idInput.value.trim();
+    if (!identifier) {
+      alert("Please enter your username or email first.");
+      idInput.focus();
+      return;
+    }
+
+    try {
+      const email = await resolveEmail(identifier);
+      if (!email) {
+        alert("❌ We couldn’t find an email for that username. Try entering your email address instead.");
+        return;
+      }
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/login.html`,
+        handleCodeInApp: false
+      };
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      alert(`✅ Password reset link sent to ${email}. Check your inbox (and spam).`);
+    } catch (err) {
+      console.error(err);
+      // Friendlier error messages
+      if (err.code === "auth/invalid-continue-uri") {
+        alert(`❌ Invalid continue URL.\nMake sure this domain is added in Firebase Console → Authentication → Settings → Authorized domains:\n${window.location.hostname}`);
+      } else if (err.code === "auth/user-not-found") {
+        alert("❌ No user found with that email.");
+      } else if (err.code === "auth/too-many-requests") {
+        alert("⏳ Too many attempts. Please try again later.");
+      } else {
+        alert("❌ " + (err.message || "Failed to send reset email."));
+      }
+    }
+  });
+
+  // ===== Toggle Password Visibility =====
+const togglePassword = document.getElementById("togglePassword");
+const passwordInput = document.getElementById("loginPassword");
+
+if (togglePassword && passwordInput) {
+  togglePassword.addEventListener("click", () => {
+    const isPassword = passwordInput.type === "password";
+    passwordInput.type = isPassword ? "text" : "password";
+
+    // Switch icon between show/hide
+    togglePassword.classList.toggle("bx-hide", !isPassword);
+    togglePassword.classList.toggle("bx-show", isPassword);
+  });
+}
+
+  
+</script>
+
 </body>
 </html>

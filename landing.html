@@ -179,18 +179,18 @@
           <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
               <li><a href="consoles.html?platform=PS">PS</a></li>
-    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
-    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
+        <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+        <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
             </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-    <li><a href="games.html?platform=PS5">PS5</a></li>
-    <li><a href="games.html?platform=PS4">PS4</a></li>
-    <li><a href="games.html?platform=Xbox">Xbox</a></li>
-    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
-  </ul>
+        <li><a href="games.html?platform=PS5">PS5</a></li>
+        <li><a href="games.html?platform=PS4">PS4</a></li>
+        <li><a href="games.html?platform=Xbox">Xbox</a></li>
+        <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
+       </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">GAMING PERIPHERALS <i class='bx bx-chevron-down'></i></button>
@@ -347,7 +347,6 @@ onAuthStateChanged(auth, async (user) => {
 
     const userData = (await getDoc(userRef)).data();
 
-    // Store in localStorage
     localStorage.setItem("name", userData.name);
     localStorage.setItem("points", userData.points);
 
@@ -603,13 +602,11 @@ if (logoutBtn){
     snapshot.forEach((doc, i) => {
       const data = doc.data();
 
-      // Create slide
       const slide = document.createElement("div");
       slide.classList.add("slide");
       slide.innerHTML = `<img src="${data.imageURL}" alt="${data.alt || "Banner"}" />`;
       slidesContainer.appendChild(slide);
 
-      // Create dot
       const dot = document.createElement("div");
       dot.classList.add("dot");
       dot.dataset.index = i;

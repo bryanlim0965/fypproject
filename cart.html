@@ -279,18 +279,18 @@
         <li class="has-sub">
           <button class="nav-link">CONSOLES <i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">PS</a></li>
-            <li><a href="#">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
+            <li><a href="consoles.html?platform=PS">PS</a></li>
+    <li><a href="consoles.html?platform=Xbox">Xbox</a></li>
+    <li><a href="consoles.html?platform=Nintendo Switch">Nintendo</a></li>
           </ul>
         </li>
         <li class="has-sub">
           <button class="nav-link">GAMES<i class='bx bx-chevron-down'></i></button>
           <ul class="submenu">
-            <li><a href="#">PS5</a></li>
-            <li><a href="#">PS4</a></li>
-            <li><a href="games.html">Xbox</a></li>
-            <li><a href="#">Nintendo</a></li>
+            <li><a href="games.html?platform=PS5">PS5</a></li>
+    <li><a href="games.html?platform=PS4">PS4</a></li>
+    <li><a href="games.html?platform=Xbox">Xbox</a></li>
+    <li><a href="games.html?platform=Nintendo%20Switch">Nintendo</a></li>
           </ul>
         </li>
         <li class="has-sub">
@@ -347,10 +347,13 @@
 
   <!-- === Firebase Auth + Cart === -->
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import {
+    getFirestore, collection, getDocs, doc, runTransaction, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // --- Firebase ---
   const firebaseConfig = {
     apiKey: "AIzaSyCnIL_Lg-sEQs-52YRUL9PTaWTWc4Xu5xA",
     authDomain: "final-year-b1cc2.firebaseapp.com",
@@ -359,29 +362,94 @@
     messagingSenderId: "537245015385",
     appId: "1:537245015385:web:ab79c9ec5e2a74cc924048"
   };
+  if (!getApps().length) initializeApp(firebaseConfig);
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+  const auth = getAuth();
+  const db   = getFirestore();
 
+  // --- Elements ---
   const cartContainer = document.getElementById("cartContainer");
-  const cartTotalEl = document.getElementById("cartTotal");
-  const cartCountEl = document.getElementById("cartCount");
+  const cartTotalEl   = document.getElementById("cartTotal");
+  const cartCountEl   = document.getElementById("cartCount");
 
-  const userMenu = document.getElementById("userMenu");
-  const loginBtn = document.getElementById("loginBtn");
-  const userBtn = document.getElementById("userBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+  const userMenu      = document.getElementById("userMenu");
+  const loginBtn      = document.getElementById("loginBtn");
+  const userBtn       = document.getElementById("userBtn");
+  const logoutBtn     = document.getElementById("logoutBtn");
   const userNameLarge = document.getElementById("userNameLarge");
-  const userAvatar = document.getElementById("userAvatar");
-  const userDropdown = document.getElementById("userDropdown");
+  const userAvatar    = document.getElementById("userAvatar");
 
-  const formatCurrency = (num) => `RM ${num.toFixed(2)}`;
+  const formatCurrency = (num) => `RM ${Number(num || 0).toFixed(2)}`;
 
-  // === Render Cart ===
+  // --- STOCK-SAFE actions (transactions) ---
+  async function changeQty(gameId, delta) {
+    const user = auth.currentUser;
+    if (!user) { window.location.href = "login.html"; return; }
+
+    const gameRef = doc(db, "games", gameId);
+    const cartRef = doc(db, "users", user.uid, "cart", gameId);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const [gSnap, cSnap] = await Promise.all([tx.get(gameRef), tx.get(cartRef)]);
+        if (!cSnap.exists()) throw new Error("CART_MISSING");
+
+        const stock   = Number(gSnap.data()?.stock ?? 0);
+        const cartQty = Number(cSnap.data()?.quantity ?? 0);
+
+        if (delta > 0) {
+          const add = Math.min(delta, stock);
+          if (add <= 0) throw new Error("OUT_OF_STOCK");
+          tx.update(gameRef, { stock: stock - add, updatedAt: serverTimestamp() });
+          tx.update(cartRef, { quantity: cartQty + add, updatedAt: serverTimestamp() });
+        } else if (delta < 0) {
+          const remove = Math.min(-delta, cartQty);
+          const newQty = cartQty - remove;
+          tx.update(gameRef, { stock: stock + remove, updatedAt: serverTimestamp() });
+          if (newQty > 0) {
+            tx.update(cartRef, { quantity: newQty, updatedAt: serverTimestamp() });
+          } else {
+            tx.delete(cartRef);
+          }
+        }
+      });
+    } catch (e) {
+      console.error(e);
+      alert(e.message === "OUT_OF_STOCK" ? "Out of stock." : "Action failed.");
+      throw e;
+    }
+  }
+
+  async function removeItem(gameId) {
+    const user = auth.currentUser;
+    if (!user) { window.location.href = "login.html"; return; }
+
+    const gameRef = doc(db, "games", gameId);
+    const cartRef = doc(db, "users", user.uid, "cart", gameId);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const [gSnap, cSnap] = await Promise.all([tx.get(gameRef), tx.get(cartRef)]);
+        if (!cSnap.exists()) return;
+
+        const qty   = Number(cSnap.data()?.quantity ?? 0);
+        const stock = Number(gSnap.data()?.stock ?? 0);
+
+        tx.update(gameRef, { stock: stock + qty, updatedAt: serverTimestamp() });
+        tx.delete(cartRef);
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Failed to remove item.");
+      throw e;
+    }
+  }
+
+  // --- Render Cart ---
   async function renderCart(uid) {
     const cartRef = collection(db, "users", uid, "cart");
     const snap = await getDocs(cartRef);
+
     if (snap.empty) {
       cartContainer.innerHTML = `<p class="empty">Your cart is empty.</p>`;
       cartTotalEl.textContent = "RM 0.00";
@@ -392,41 +460,41 @@
     let total = 0;
     let itemCount = 0;
     cartContainer.innerHTML = "";
+
     snap.forEach(docSnap => {
       const item = docSnap.data();
-      const itemTotal = item.price * item.quantity;
+      const gameId = docSnap.id; // cart doc id must equal game doc id
+      const itemTotal = (item.price || 0) * (item.quantity || 0);
       total += itemTotal;
-      itemCount += item.quantity;
+      itemCount += (item.quantity || 0);
 
       const div = document.createElement("div");
       div.className = "cart-item";
+      div.setAttribute("data-row-id", gameId);
       div.innerHTML = `
-        <div class="thumb"><img src="${item.image || 'Images/placeholder.jpg'}" alt="${item.title}"></div>
-        <div class="item-name">${item.title}</div>
+        <div class="thumb"><img src="${item.image || 'Images/placeholder.jpg'}" alt="${item.title || ''}"></div>
+        <div class="item-name">${item.title || ''}</div>
         <div class="item-qty">
           <button class="qty-btn minus">−</button>
-          <span class="qty">${item.quantity}</span>
+          <span class="qty">${item.quantity || 0}</span>
           <button class="qty-btn plus">+</button>
         </div>
         <div class="item-price">${formatCurrency(item.price)}</div>
         <div class="item-total">${formatCurrency(itemTotal)}</div>
-        <button class="remove-btn"><i class='bx bx-x-circle'></i></button>
+        <button class="remove-btn" title="Remove"><i class='bx bx-x-circle'></i></button>
       `;
 
+      // Wire buttons -> transaction functions, then re-render
       div.querySelector(".plus").addEventListener("click", async () => {
-        await updateDoc(doc(db, "users", uid, "cart", docSnap.id), { quantity: item.quantity + 1 });
+        await changeQty(gameId, +1);
         renderCart(uid);
       });
       div.querySelector(".minus").addEventListener("click", async () => {
-        if (item.quantity > 1) {
-          await updateDoc(doc(db, "users", uid, "cart", docSnap.id), { quantity: item.quantity - 1 });
-        } else {
-          await deleteDoc(doc(db, "users", uid, "cart", docSnap.id));
-        }
+        await changeQty(gameId, -1);
         renderCart(uid);
       });
       div.querySelector(".remove-btn").addEventListener("click", async () => {
-        await deleteDoc(doc(db, "users", uid, "cart", docSnap.id));
+        await removeItem(gameId);
         renderCart(uid);
       });
 
@@ -434,56 +502,41 @@
     });
 
     cartTotalEl.textContent = formatCurrency(total);
-    cartCountEl.textContent = itemCount;
+    cartCountEl.textContent = String(itemCount);
   }
 
-  // === Handle Auth State ===
- onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Show user UI
-    loginBtn.style.display = "none";
-    userMenu.style.display = "inline-block";
+  // --- Auth state ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginBtn.style.display = "none";
+      userMenu.style.display = "inline-block";
 
-    const displayName = user.displayName || user.email.split("@")[0];
-    const initials = displayName.charAt(0).toUpperCase();
+      const displayName = user.displayName || user.email.split("@")[0];
+      userNameLarge.textContent = displayName;
+      userAvatar.textContent = displayName.charAt(0).toUpperCase();
 
-    userNameLarge.textContent = displayName;
-    userAvatar.textContent = initials;
+      cartCountEl.style.display = "inline-block";
+      renderCart(user.uid);
+    } else {
+      userMenu.style.display = "none";
+      loginBtn.style.display = "inline-flex";
+      cartContainer.innerHTML = `<p>Please log in to view your cart.</p>`;
+      cartCountEl.textContent = "0";
+      cartCountEl.style.display = "none";
+    }
+  });
 
-    // Show cart bubble
-    cartCountEl.style.display = "inline-block";
-
-    // Render Cart
-    renderCart(user.uid);
-  } else {
-    // Hide user info
-    userMenu.style.display = "none";
-    loginBtn.style.display = "inline-flex";
-    cartContainer.innerHTML = `<p>Please log in to view your cart.</p>`;
-    cartCountEl.textContent = "0";
-    cartCountEl.style.display = "none"; // 👈 Hide bubble completely when logged out
-  }
-});
-
-
-  // === Logout Button ===
+  // --- Logout & dropdown ---
   logoutBtn.addEventListener("click", async () => {
     await signOut(auth);
     window.location.href = "landing.html";
   });
-
-  // === Toggle user dropdown ===
-  userBtn.addEventListener("click", () => {
-    userMenu.classList.toggle("open");
-  });
-
-  // Close dropdown on click outside
+  userBtn.addEventListener("click", () => userMenu.classList.toggle("open"));
   window.addEventListener("click", (e) => {
-    if (!userMenu.contains(e.target)) {
-      userMenu.classList.remove("open");
-    }
+    if (!userMenu.contains(e.target) && e.target !== userBtn) userMenu.classList.remove("open");
   });
 </script>
+
 
 </body>
 </html>

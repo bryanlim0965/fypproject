@@ -112,3 +112,30 @@ body {
 .register-link a:hover {
   text-decoration: underline;
 }
+
+.remember-forgot {
+  display: flex;
+  justify-content: flex-end; /* push forgot password to the right */
+  align-items: center;
+  margin-bottom: 10px; /* keep spacing same as before */
+}
+
+/* Base icon styling (already in your file) */
+.input-box i {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #fff;
+}
+
+/* Lock icon stays on far right */
+.input-box .bxs-lock-alt {
+  right: 20px;
+}
+
+/* Eye icon sits just to the left of lock */
+.input-box #togglePassword {
+  right: 50px;
+  cursor: pointer;
+}

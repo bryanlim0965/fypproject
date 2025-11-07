@@ -181,7 +181,8 @@
             <span>Total: RM ${order.total?.toFixed(2) || "0.00"}</span>
             <span class="order-status ${statusClass}">${order.status || "pending"}</span>
           </div>
-          <button class="apply-btn" style="margin-top: 10px;" onclick="window.location.href='order-details.html?id=${docSnap.id}'">View Details</button>
+          <button class="apply-btn" style="margin-top: 10px;" 
+          onclick="window.location.href='order-details.html?id=${docSnap.id}'">View Details</button>
         `;
         ordersContainer.appendChild(card);
       });

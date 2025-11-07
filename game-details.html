@@ -321,12 +321,10 @@ if(logoutBtn){
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  // Get game ID from URL
+ 
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get("id");
 
-  // Target elements
   const gameCover = document.querySelector(".game-cover img");
   const gameTitle = document.querySelector(".game-info h2");
   const gamePrice = document.querySelector(".game-info .price");
@@ -400,89 +398,122 @@ if (addBtnEl) {
   loadGameDetails();
 </script>
 
-<!-- 🛒 Add to Cart Functionality (with stock guard) -->
+<!-- 🛒 Add to Cart Functionality (atomic stock deduct) -->
 <script type="module">
   import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import {
+    getFirestore, doc, getDoc, runTransaction, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const auth = getAuth();
   const db = getFirestore();
 
   const addToCartBtn = document.querySelector(".add-to-cart");
-  const qtyInput = document.getElementById("qty");
+  const qtyInput     = document.getElementById("qty");
+  const gameTitleEl  = document.querySelector(".game-info h2");
+  const gamePriceEl  = document.querySelector(".game-info .price");
+  const gameCoverEl  = document.querySelector(".game-cover img");
 
-  const gameTitle = document.querySelector(".game-info h2");
-  const gamePrice = document.querySelector(".game-info .price");
-  const gameCover = document.querySelector(".game-cover img");
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get("id");
 
-  async function getAvailableStock(gameId){
-    const ref = doc(db, "games", gameId);
-    const snap = await getDoc(ref);
-    return Number((snap.data()?.stock) ?? 0);
-  }
+  function parsePrice(text){ return parseFloat(String(text || "").replace(/[^\d.]/g,"")) || 0; }
 
-  addToCartBtn.addEventListener("click", async () => {
+  async function addToCartAndDeduct() {
     const user = auth.currentUser;
     if (!user) {
       alert("Please log in to add items to your cart.");
-      window.location.href = "#";
+      window.location.href = "login.html";
       return;
     }
+    if (!gameId) { alert("Game not found."); return; }
 
-    const uid = user.uid;
-    const gameId = new URLSearchParams(window.location.search).get("id");
     const requestedQty = Math.max(parseInt(qtyInput.value || "1", 10), 1);
 
-    // 1) Re-read latest stock from DB
-    const stock = await getAvailableStock(gameId);
-    if (stock <= 0) {
-      alert("❌ Out of stock.");
-      return;
-    }
+    const gameRef = doc(db, "games", gameId);
+    const cartItemRef = doc(db, "users", user.uid, "cart", gameId);
 
-    // 2) How many already in cart
-    const cartItemRef = doc(db, "users", uid, "cart", gameId);
-    const existingSnap = await getDoc(cartItemRef);
-    const existingQty = existingSnap.exists() ? Number(existingSnap.data().quantity || 0) : 0;
-
-    // 3) Remaining you can add
-    const remaining = stock - existingQty;
-    if (remaining <= 0) {
-      alert("❌ You already have the maximum available quantity of this item in your cart.");
-      qtyInput.value = 1;
-      return;
-    }
-
-    if (requestedQty > remaining) {
-      alert(`⚠️ Only ${remaining} left in stock. Quantity adjusted.`);
-      qtyInput.value = remaining;
-    }
-
-    const finalQtyToAdd = Math.min(requestedQty, remaining);
-
-    // Prepare the cart item
-    const itemData = {
-      title: gameTitle.textContent,
-      price: parseFloat(gamePrice.textContent.replace(/[^\d.]/g, "")) || 0,
-      image: gameCover.src,
-      quantity: finalQtyToAdd,
-      addedAt: new Date()
-      
-    };
+    const title = gameTitleEl?.textContent?.trim() || "Untitled";
+    const price = parsePrice(gamePriceEl?.textContent);
+    const image = gameCoverEl?.src || "";
 
     try {
-      if (existingSnap.exists()) {
-        await updateDoc(cartItemRef, { quantity: increment(finalQtyToAdd) });
-      } else {
-        await setDoc(cartItemRef, itemData);
+      const result = await runTransaction(db, async (tx) => {
+        // Read latest stock
+        const gameSnap = await tx.get(gameRef);
+        if (!gameSnap.exists()) throw new Error("MISSING_GAME");
+        const currentStock = Number(gameSnap.data().stock || 0);
+
+        if (currentStock <= 0) throw new Error("OUT_OF_STOCK");
+
+        // How many we can actually add right now (cap by available stock)
+        const toAdd = Math.min(requestedQty, currentStock);
+
+        // Read existing cart item once inside the same txn
+        const cartSnap = await tx.get(cartItemRef);
+        const existingQty = cartSnap.exists() ? Number(cartSnap.data().quantity || 0) : 0;
+
+        // Update stock
+        tx.update(gameRef, {
+          stock: currentStock - toAdd,
+          updatedAt: serverTimestamp()
+        });
+
+        if (cartSnap.exists()) {
+          tx.update(cartItemRef, {
+            title, price, image,
+            quantity: existingQty + toAdd,
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          tx.set(cartItemRef, {
+            title, price, image,
+            quantity: toAdd,
+            addedAt: serverTimestamp()
+          });
+        }
+
+        return { added: toAdd, remainingStock: currentStock - toAdd };
+      });
+
+      // UI updates
+      const badge = document.querySelector(".game-info .stock-badge");
+      if (badge) {
+        badge.textContent = result.remainingStock > 0
+          ? `In stock: ${result.remainingStock}`
+          : "Out of stock";
+        badge.style.color = result.remainingStock > 0 ? "#9ae66e" : "#ff8080";
       }
-      alert("✅ Added to cart!");
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      alert("❌ Failed to add item to cart.");
+      // Expose fresh stock for other scripts
+      window.availableStock = result.remainingStock;
+      if (qtyInput) {
+        qtyInput.max = Math.max(result.remainingStock, 0);
+        if (result.remainingStock === 0) {
+          qtyInput.value = 0;
+          document.querySelector(".add-to-cart")?.setAttribute("disabled", "disabled");
+        }
+      }
+
+      if (result.added < requestedQty) {
+        alert(`Added ${result.added} (limited by stock).`);
+      } else {
+        alert("✅ Added to cart!");
+      }
+    } catch (err) {
+      if (err?.message === "OUT_OF_STOCK") {
+        alert("❌ Out of stock.");
+      } else if (err?.message === "MISSING_GAME") {
+        alert("❌ Game not found.");
+      } else {
+        console.error(err);
+        alert("❌ Failed to add item to cart.");
+      }
     }
-  });
+  }
+
+  document.querySelector(".add-to-cart")?.addEventListener("click", addToCartAndDeduct);
 </script>
+
 
 
 <!-- Firebase + user menu + points -->

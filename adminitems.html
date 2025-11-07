@@ -33,6 +33,7 @@
     <a href="adminitems.html" class="active"><i class='bx bxs-package'></i> Item Management</a>
     <a href="adminorder.html"><i class='bx bxs-shopping-bag-alt'></i> Order Management</a>
     <a href="adminuser.html"><i class='bx bxs-user-account'></i> User Management</a>
+    <a href="admintickets.html"><i class='bx bxs-message-dots'></i> Tickets</a>
 
     <!-- Logout Button -->
     <div class="logout-section">
@@ -198,7 +199,6 @@ async function loadItems() {
   const plat = (p||"").toLowerCase();
   const n = (name||"").toLowerCase();
 
-  // 🔹 Detect PS4 / PS5 from PScon or PlayStation tags
   if (plat.includes("pscon") || plat.includes("playstation") || plat === "ps") {
     if (n.includes("ps5")) return "PS5";
     if (n.includes("ps4")) return "PS4";

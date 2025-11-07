@@ -114,7 +114,7 @@
     border-radius: 10px;
     border: 1px solid #222;
     background: rgba(255, 255, 255, 0.856);
-    color: #fff;
+    color: black;
   }
 
   .readonly { background: #222; }
@@ -294,9 +294,10 @@ select option[disabled] {
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { 
-  getFirestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import {
+  getFirestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc,
+   serverTimestamp, query, where, getDocs as qGetDocs, updateDoc
+ } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
   const firebaseConfig = {
@@ -414,6 +415,11 @@ safeInitDeliveryForUserState();
   let cartItems = [];
   let subtotal = 0, discount = 0, deliveryFee = 0, grandTotal = 0, pointsEarned = 0;
   let currentUser = null;
+  // promo state
+let appliedRedeemRef = null;     // /users/{uid}/redeems/{doc} ref
+let appliedDiscountAmount = 0;   // RM value
+let appliedCode = "";            // text the user entered
+
   const formatCurrency = (n) => `RM ${n.toFixed(2)}`;
 
   // === Address edit toggle ===
@@ -461,7 +467,6 @@ safeInitDeliveryForUserState();
     document.getElementById("country").value = data.country || "Malaysia";
   }
 
-  // IMPORTANT: update delivery options after we've populated the state
   updateDeliveryOptionsForState(cityEl.value);
 }
 
@@ -522,17 +527,59 @@ safeInitDeliveryForUserState();
 
   deliveryOption.addEventListener("change", updateTotals);
 
-  applyPromoBtn.addEventListener("click", () => {
-    const code = promoCodeInput.value.trim().toUpperCase();
-    if (code === "DISCOUNT10") {
-      discount = 10;
-      promoMessage.textContent = "Promo applied! RM10 off.";
-    } else {
+// === Redeem / Promo Code Integration (reads user's /redeems) ===
+applyPromoBtn.addEventListener("click", async () => {
+  const code = (promoCodeInput.value || "").trim().toUpperCase();
+  if (!currentUser) { alert("Please log in to apply promo code."); return; }
+  if (!code)       { alert("Please enter a promo code."); return; }
+
+  try {
+    const redeemsCol = collection(db, "users", currentUser.uid, "redeems");
+    const q = query(redeemsCol, where("code", "==", code), where("used", "==", false));
+    const qs = await qGetDocs(q);
+
+    if (qs.empty) {
+      promoMessage.textContent = "❌ Code not found or already used.";
       discount = 0;
-      promoMessage.textContent = "Invalid promo code.";
+      appliedRedeemRef = null;
+      appliedDiscountAmount = 0;
+      appliedCode = "";
+      updateTotals();
+      return;
     }
+
+    const snap = qs.docs[0];
+    const data = snap.data();
+
+    let amount = Number(data.discountAmount || 0);
+    if (!amount && typeof data.item === "string") {
+      const m = data.item.match(/RM\s*([\d.]+)/i);
+      if (m) amount = parseFloat(m[1]);
+    }
+    if (!amount || isNaN(amount) || amount <= 0) {
+      promoMessage.textContent = "❌ This reward has no discount amount.";
+      return;
+    }
+
+    // Save for later; DO NOT mark used yet
+    appliedRedeemRef = snap.ref;
+    appliedDiscountAmount = amount;
+    appliedCode = code;
+
+    discount = Math.min(amount, subtotal);
     updateTotals();
-  });
+
+    promoMessage.textContent = `✅ Code applied (RM${amount}). It will be consumed at order placement.`;
+  } catch (err) {
+    console.error("Promo apply error:", err);
+    promoMessage.textContent = "❌ Could not apply code. Try again.";
+  }
+});
+
+
+
+
+  
 
   // === Auth listener ===
 onAuthStateChanged(auth, async (user) => {
@@ -541,7 +588,6 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("fullName").value = user.displayName || user.email.split("@")[0];
     document.getElementById("email").value = user.email;
 
-    // 🔹 Load phone from Firestore if available
     try {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -573,6 +619,20 @@ placeOrderBtn.addEventListener("click", async () => {
   if (paymentReceipt.files.length === 0) return alert("Please upload your payment receipt.");
 
   try {
+    // Re-validate promo before creating order
+if (appliedRedeemRef) {
+  const rs = await getDoc(appliedRedeemRef);
+  if (!rs.exists() || rs.data().used) {
+    alert("❌ This promo code is no longer available. Please re-apply.");
+    appliedRedeemRef = null;
+    appliedDiscountAmount = 0;
+    appliedCode = "";
+    discount = 0;
+    updateTotals();
+    return;
+  }
+}
+
     // ✅ 1. Upload receipt image to Cloudinary
     const file = paymentReceipt.files[0];
     const formData = new FormData();
@@ -611,7 +671,10 @@ placeOrderBtn.addEventListener("click", async () => {
       address: addressData,
       paymentReceiptName: receiptURL, // ✅ now stores Cloudinary URL
       createdAt: serverTimestamp(),
-      status: "pending"
+      status: "pending",
+      promo: appliedRedeemRef ? { code: appliedCode, discount } : null
+      
+      
     };
 
     // ✅ 4. Save to Firestore
@@ -622,6 +685,15 @@ placeOrderBtn.addEventListener("click", async () => {
     for (const item of cartItems) {
       await deleteDoc(doc(db, "users", currentUser.uid, "cart", item.id));
     }
+
+if (appliedRedeemRef) {
+  await updateDoc(appliedRedeemRef, {
+    used: true,
+    usedAt: serverTimestamp(),
+    discountApplied: appliedDiscountAmount
+  });
+}
+
 
     alert("✅ Order placed successfully!");
     window.location.href = "order-confirmation.html";
